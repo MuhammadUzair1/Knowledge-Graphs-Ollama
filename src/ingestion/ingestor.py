@@ -82,7 +82,7 @@ class Ingestor:
 
     @staticmethod
     def create_processed_document(file: str, document_content: str, metadata: dict):
-        processed_doc = ProcessedDocument(filename=file, text=document_content, metadata=metadata)
+        processed_doc = ProcessedDocument(filename=file, source=document_content, metadata=metadata)
         return processed_doc
 
     

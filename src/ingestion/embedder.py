@@ -51,7 +51,7 @@ class ChunkEmbedder:
         """
         if self.embeddings is not None:
             for chunk in doc.chunks:
-                chunk.embedding = self.embeddings.embed_documents([chunk.content])
+                chunk.embedding = self.embeddings.embed_documents([chunk.text])
                 chunk.embeddings_model = self.conf.model
             logger.info(f"Embedded {len(doc.chunks)} chunks.")
             return doc
