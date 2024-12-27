@@ -1,10 +1,12 @@
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 
+from langchain_neo4j.graphs.graph_document import Node, Relationship
+
 
 class Chunk(BaseModel):
     chunk_id: int
-    content: str
+    text: str
     embedding: Optional[List[float]] = None
     chunk_size: int=1000
     chunk_overlap: int=100
@@ -13,11 +15,12 @@ class Chunk(BaseModel):
 
 class ProcessedDocument(BaseModel):
     filename: str = ""
-    text: str = ""
+    source: str= ""
     document_version: int = 1
     metadata: Optional[dict] = None
-    source: str = "local_directory"
     chunks: Optional[List[Chunk]] = None
+    nodes: Optional[List[Node]] = None
+    relationships: Optional[List[Relationship]] = None
 
 
 class Ontology(BaseModel):
