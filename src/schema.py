@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 
+from langchain_core.load.serializable import Serializable
 from langchain_neo4j.graphs.graph_document import Node, Relationship
 
 
@@ -11,6 +12,8 @@ class Chunk(BaseModel):
     chunk_size: int=1000
     chunk_overlap: int=100
     embeddings_model: Optional[str] = None
+    nodes: Optional[List[Node]] = None
+    relationships: Optional[List[Relationship]] = None
 
 
 class ProcessedDocument(BaseModel):
@@ -19,8 +22,6 @@ class ProcessedDocument(BaseModel):
     document_version: int = 1
     metadata: Optional[dict] = None
     chunks: Optional[List[Chunk]] = None
-    nodes: Optional[List[Node]] = None
-    relationships: Optional[List[Relationship]] = None
 
 
 class Ontology(BaseModel):
@@ -28,3 +29,28 @@ class Ontology(BaseModel):
     allowed_labels: Optional[List[str]]=None
     labels_descriptions: Optional[Dict[str, str]]=None
     allowed_relations: Optional[List[str]]=None
+
+
+class Node(Serializable):
+    id: str
+    type: str
+    properties: Optional[Dict[str, str]] = None
+
+
+class Relationship(Serializable):
+    source: str
+    target: str
+    type: str
+    properties: Optional[Dict[str, str]] = None
+
+
+class Graph(Serializable):
+    """ 
+    Represents a graph consisting of nodes and relationships.
+
+    Attributes:
+        nodes (List[Node]): A list of nodes in the graph.
+        relationships (List[Relationship]): A list of relationships in the graph.
+    """
+    nodes: List[Node]
+    relationships: List[Relationship]

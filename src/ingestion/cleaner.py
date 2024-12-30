@@ -59,7 +59,7 @@ class Cleaner:
         """
         Cleans the text of a `ProcessedDocument` instance.
         """
-        doc.text = self._clean_text(doc.text)
+        doc.source = self._clean_text(doc.source)
         return doc
     
 

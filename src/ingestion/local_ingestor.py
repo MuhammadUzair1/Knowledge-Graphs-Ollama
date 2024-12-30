@@ -10,9 +10,8 @@ class LocalIngestor(Ingestor):
     `Ingestor` instance specialized in retrieving documents from 
     a local folder
     """
-    def __init__(self, conf: Source):
-        self.folder = conf.folder 
-        super().__init__(conf)
+    def __init__(self, source: Source):
+        self.folder = source.folder 
 
 
     def list_files(self) -> List[str]:

@@ -81,7 +81,7 @@ class EmbedderConf(BaseModel):
     endpoint: Optional[str] = None
 
 
-class KBDatabaseConfig(BaseModel):
+class KnowledgeGraphConfig(BaseModel):
     """
     Configuration for the backend Database for the Knowledge Base.  
     It might come with an Ontology, a pre-estabilished set of allowed relationships
@@ -101,14 +101,15 @@ class KBDatabaseConfig(BaseModel):
     `ontology`: `Ontology`
     """
     password: str
-    db_schema : str = "neo4j"
-    host_name: str = "localhost"
-    port: int = 7687
-    user: str = "neo4j"
-    database: str = "neo4j"
+    db_schema :  Optional[str] = None
+    host_name:  Optional[str] = None
+    port:  Optional[int] = None
+    user: Optional[str] = None
+    database: Optional[str] = None
     index_name: str = "vectors"
     timeout: int=5000
     ontology: Optional[Ontology] = None
+    uri: Optional[str] = None
 
 
 class Configuration(BaseModel):
@@ -126,7 +127,7 @@ class Configuration(BaseModel):
     `embedder_conf`: configuration for the Embeddings model that will create vectors out of documents
     `qa_model`: configuration for the Q&A model (LLM) that will interact with the user
     """
-    database: KBDatabaseConfig
+    database: KnowledgeGraphConfig
     chunker_conf: Optional[ChunkerConf] = None
     source_conf: Optional[Source] = None
     re_model_conf: Optional[LLMConf] = None

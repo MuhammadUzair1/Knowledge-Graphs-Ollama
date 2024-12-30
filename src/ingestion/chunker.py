@@ -45,7 +45,7 @@ class Chunker:
         return [
             {
                 "chunk_id": i + 1,
-                "content": chunk,
+                "text": chunk,
                 "chunk_size": self.chunk_size, 
                 "chunk_overlap": self.chunk_overlap
             }
@@ -57,7 +57,7 @@ class Chunker:
         """
         Chunks the text of a `ProcessedDocument` instance.
         """
-        chunks_dict = self.get_chunked_document_with_ids(doc.text)
+        chunks_dict = self.get_chunked_document_with_ids(doc.source)
         
         doc.chunks = [Chunk(**chunk) for chunk in chunks_dict]
 

@@ -1,11 +1,11 @@
 from logging import getLogger
 from typing import Optional
 
-from langchain_neo4j.graphs.graph_document import GraphDocument
+# from langchain_neo4j.graphs.graph_document import Relationship, Node
 
 from src.agents.llm import fetch_llm
 from src.config import LLMConf
-from src.schema import Ontology
+from src.schema import Ontology, Graph
 from src.prompts.graph_extractor import get_graph_extractor_prompt 
 
 
@@ -22,19 +22,19 @@ class GraphExtractor:
         self.prompt = get_graph_extractor_prompt()
 
         self.prompt.partial_variables = {
-            'allowed_labels':ontology.allowed_labels, 
-            'labels_descriptions': ontology.labels_descriptions, 
-            'allowed_relationships': ontology.allowed_relations
+            'allowed_labels':ontology.allowed_labels if ontology.allowed_labels else "", 
+            'labels_descriptions': ontology.labels_descriptions if ontology.labels_descriptions else "", 
+            'allowed_relationships': ontology.allowed_relations if ontology.allowed_relations else ""
         }
 
 
-    def extract_graph(self, text: str) -> GraphDocument:
+    def extract_graph(self, text: str) -> Graph:
         """ Extracts a graph from a text.
         """
         if self.llm is not None:
             try:
-                output: GraphDocument = self.llm.with_structured_output(
-                    schema=GraphDocument
+                output: Graph = self.llm.with_structured_output(
+                    schema=Graph
                     ).invoke(
                         input=self.prompt.format(input_text=text)
                     )
