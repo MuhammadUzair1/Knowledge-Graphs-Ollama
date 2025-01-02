@@ -1,7 +1,6 @@
 from typing import List
 
-from langchain_core.prompts import PromptTemplate
-
+from langchain.prompts import PromptTemplate
 
 def get_graph_extractor_prompt()-> PromptTemplate:
     """ 
@@ -15,19 +14,19 @@ def get_graph_extractor_prompt()-> PromptTemplate:
 
         - NODES represent entities and concepts.
         - RELATIONSHIPS represents the connections between nodes.
-        - The aim is to achieve simplicity and clarity in the knowledge graph, making it accessible for a vast audience.
+        - PROPERTIES characterize nodes or relationships.
 
         ------
-        RULES
+        RULES:
         ------
 
         1. FORMAT
-        You MUST return ONLY Graph extracted from the INPUT TEXT. Do not add anything else. 
-        Remember that a Graph is defined as 
+        - You MUST return ONLY the Graph extracted from the INPUT TEXT. Do not add anything else. 
+        - Remember that a Graph is defined as 
 
         ````
-        class Graph(BaseModel):
-            ''' 
+        class Graph(Serializable):
+            '''
             Represents a graph consisting of nodes and relationships.
 
             Attributes:
@@ -41,64 +40,47 @@ def get_graph_extractor_prompt()-> PromptTemplate:
         where Nodes and Relationships are defined as
 
         ````
-        class Node(BaseModel):
+        class Node(Serializable):
             '''
             Represents a node in a graph with associated properties.
 
             Attributes:
                 id (str): A unique identifier for the node.
                 type (str): The type or label of the node.
-                properties (dict): Additional properties and metadata associated with the node.
+                properties (Optional[Dict[str, str]]): Additional properties associated with the node.
             '''
             id: str
             type: str
-            properties: Optional[dict] = None
+            properties: Optional[Dict[str, str]]
         ````
 
         and 
 
         ````
-        class Relationship(BaseModel):
+        class Relationship(Serializable):
             '''
             Represents a directed relationship between two nodes in a Graph.
 
             Attributes:
-                source (Node): The source node of the relationship.
-                target (Node): The target node of the relationship.
+                source (str): The source node of the relationship.
+                target (str): The target node of the relationship.
                 type (str): The type of the relationship.
-                properties (dict): Additional properties associated with the relationship.
+                properties (Optional[Dict[str, str]]): Additional properties associated with the relationship.
             '''
-            source: Node
-            target: Node
+            source: str
+            target: str
             type: str
-            properties: Optional[dict] = None
+            properties: Optional[Dict[str, str]]
         ````
 
-        2. NUMERICAL DATA AND DATES
-        - Numerical data, like age or other related information, should be incorporated as attributes or properties of the respective nodes.
-        -  Do not create separate nodes for dates or numerical values. Always attach them as attributes or properties of nodes.
-        - Properties must be in a key-value format.
-        - Never use escaped single or double quotes within property values.
-        - Use camelCase for property keys, e.g., `birthDate`.
-
-
-       3. ENTITY CONSISTENCY
-        When extracting entities, it's vital to ensure consistency.
-        If an entity, such as "John Doe", is mentioned multiple times in the text but is referred to by different names or pronouns (e.g., "Joe", "he"),
-        always use the most complete identifier for that entity throughout the knowledge graph. In this example, use "John Doe" as the entity ID.
-        Remember, the knowledge graph should be coherent and easily understandable, so maintaining consistency in entity references is crucial.
-        ## 5. Strict Compliance
-        Adhere to the rules strictly. Non-compliance will result in termination.
-
-
-        4. ALLOWED LABELS AND RELATIONSHIPS
+        2. ALLOWED LABELS AND RELATIONSHIPS
         - If provided with allowed labels and relationship types then you MUST use only those as possible outcomes. 
         - If labels and relationships are not provided, you are free to use any label and relationship you see fit. 
 
         ------------
         
         ALLOWED NODE LABELS: {allowed_labels}
-        NODE LABELS DESCRIPTIONS: {labels_descriptions}
+        LABELS DESCRIPTIONS: {labels_descriptions}
         ALLOWED RELATIONSHIPS TYPES: {allowed_relationships}
 
         ## Begin Extraction!
@@ -110,3 +92,17 @@ def get_graph_extractor_prompt()-> PromptTemplate:
     template.input_variables = ['input_text', 'allowed_labels', 'labels_descriptions', 'allowed_relationships']
 
     return template
+
+# 2. NUMERICAL DATA AND DATES
+#         - Numerical data, like age or other related information, should be incorporated as attributes or properties of the respective nodes.
+#         -  Do not create separate nodes for dates or numerical values. Always attach them as attributes or properties of nodes.
+#         - Properties must be in a key-value format.
+#         - Never use escaped single or double quotes within property values.
+#         - Use camelCase for property keys, e.g., `birthDate`.
+
+
+#        3. ENTITY CONSISTENCY
+#         When extracting entities, it's vital to ensure consistency.
+#         If an entity, such as "John Doe", is mentioned multiple times in the text but is referred to by different names or pronouns (e.g., "Joe", "he"),
+#         always use the most complete identifier for that entity throughout the knowledge graph. In this example, use "John Doe" as the entity ID.
+#         Remember, the knowledge graph should be coherent and easily understandable, so maintaining consistency in entity references is crucial.

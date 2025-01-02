@@ -24,33 +24,29 @@ class ProcessedDocument(BaseModel):
     chunks: Optional[List[Chunk]] = None
 
 
-class Ontology(BaseModel):
-    """ Ontology of the graph DB to be built or queried """
-    allowed_labels: Optional[List[str]]=None
-    labels_descriptions: Optional[Dict[str, str]]=None
-    allowed_relations: Optional[List[str]]=None
 
 
-class Node(Serializable):
-    id: str
-    type: str
-    properties: Optional[Dict[str, str]] = None
+
+# class Node(Serializable):
+#     id: str
+#     type: str
+#     properties: Optional[Dict[str, str]] = None
 
 
-class Relationship(Serializable):
-    source: str
-    target: str
-    type: str
-    properties: Optional[Dict[str, str]] = None
+# class Relationship(Serializable):
+#     source: str
+#     target: str
+#     type: str
+#     properties: Optional[Dict[str, str]] = None
 
 
-class Graph(Serializable):
-    """ 
-    Represents a graph consisting of nodes and relationships.
+# class Graph(Serializable):
+#     """ 
+#     Represents a graph consisting of nodes and relationships.
 
-    Attributes:
-        nodes (List[Node]): A list of nodes in the graph.
-        relationships (List[Relationship]): A list of relationships in the graph.
-    """
-    nodes: List[Node]
-    relationships: List[Relationship]
+#     Attributes:
+#         nodes (List[Node]): A list of nodes in the graph.
+#         relationships (List[Relationship]): A list of relationships in the graph.
+#     """
+#     nodes: List[Node]
+#     relationships: List[Relationship]

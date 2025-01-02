@@ -9,7 +9,9 @@ from langchain_neo4j.vectorstores.neo4j_vector import Neo4jVector
 from neo4j import ManagedTransaction
 
 from src.config import KnowledgeGraphConfig
-from src.schema import ProcessedDocument, Ontology
+from src.graph.graph_model import Ontology
+from src.schema import ProcessedDocument
+
 
 logger = getLogger(__name__)
 
@@ -44,23 +46,10 @@ class KnowledgeGraph(Neo4jGraph):
         self.timeout = conf.timeout
         self.index_name = conf.index_name
 
-        self.vector_db = Neo4jVector(
-            embedding=embeddings_model,
-            url=self.url,
-            username=self.username, 
-            database=self.database,
-            password=self.password,
-            index_name=self.index_name,
-            node_label="Chunk",
-            embedding_node_property="embedding",
-            text_node_property="text",
-        )
-
         if ontology: # TODO 
             self.allowed_labels = ontology.allowed_labels
             self.allowed_relationships = ontology.allowed_relations
 
-        self.index_name = conf.index_name
         self._labels_ = None 
         self._number_of_entities_ = None
         self._number_of_labels_ = None
@@ -240,15 +229,18 @@ class KnowledgeGraph(Neo4jGraph):
         Stores Chunk nodes for a Document into the Knowledge Graph and updates the
         Knowledge Graph itself with the graphs extracted from each chunk, if any.
         """
-
+        
         for chunk in doc.chunks:
-            
+
             texts = []
             embeddings = []
             metadatas = []
-
+            
             # doc level metadata
-            metadata = doc.metadata
+            if doc.metadata: 
+                metadata = doc.metadata
+            else: 
+                metadata = {}
             metadata["filename"] = doc.filename
             metadata["document_version"] = doc.document_version
             # chunk level metadata
@@ -264,34 +256,43 @@ class KnowledgeGraph(Neo4jGraph):
             text_embedding_pairs = list(zip(texts, embeddings))
 
             try:
-                vdb = self.vector_db.from_embeddings(
+                vdb = Neo4jVector(
+                    embedding=embeddings_model,
+                    url=self.url,
+                    username=self.username, 
+                    database=self.database,
+                    password=self.password,
+                    index_name=self.index_name,
+                    node_label="Chunk",
+                    embedding_node_property="embedding",
+                    text_node_property="text",
+                ).from_embeddings(
                     text_embeddings=text_embedding_pairs,
                     metadatas=metadatas,
-                    embedding=embeddings_model,
-                    distance_strategy="cosine",
+                    embedding=embeddings_model
                 )
             except Exception as e:
                 logger.warning(f"Error storing chunk for document {doc.filename}: {e}")
 
-            # store chunk's graph
-            if chunk.nodes is not None and chunk.relationships is not None:
+        # store chunk's graph
+        if chunk.nodes is not None and chunk.relationships is not None:
 
-                graph_doc: GraphDocument = GraphDocument(
-                    nodes=chunk.nodes,
-                    relationships=chunk.relationships,
-                    source=Document(
-                        page_content=chunk.text,
-                        # metadata={"id": chunk.chunk_id}
-                    )
+            graph_doc: GraphDocument = GraphDocument(
+                nodes=chunk.nodes,
+                relationships=chunk.relationships,
+                source=Document(
+                    page_content=chunk.text,
+                    # metadata={"id": chunk.chunk_id}
                 )
+            )
 
-                try:
-                    self.add_graph_documents(
-                        graph_documents=[graph_doc], 
-                        include_source=True
-                    )
-                except Exception as e:
-                    logger.warning(f"Error storing graph for chunk {chunk.chunk_id} in document {doc.filename}: {e}")
+            try:
+                self.add_graph_documents(
+                    graph_documents=[graph_doc], 
+                    include_source=True
+                )
+            except Exception as e:
+                logger.warning(f"Error storing graph for chunk {chunk.chunk_id} in document {doc.filename}: {e}")
 
                     #TODO add mentions relationships from chunk to document
                     # self.add_mentions_relationships()

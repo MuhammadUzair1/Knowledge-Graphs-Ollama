@@ -5,7 +5,7 @@ from enum import Enum
 from pydantic import BaseModel
 from typing import Optional
 
-from src.schema import Ontology
+from src.graph.graph_model import Ontology
 
 
 logger = getLogger(__name__)
@@ -106,7 +106,7 @@ class KnowledgeGraphConfig(BaseModel):
     port:  Optional[int] = None
     user: Optional[str] = None
     database: Optional[str] = None
-    index_name: str = "vectors"
+    index_name: str = "vectors_2"
     timeout: int=5000
     ontology: Optional[Ontology] = None
     uri: Optional[str] = None
