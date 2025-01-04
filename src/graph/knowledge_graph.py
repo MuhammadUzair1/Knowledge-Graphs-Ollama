@@ -57,6 +57,21 @@ class KnowledgeGraph(Neo4jGraph):
         self._number_of_docs = None
         self._relationships_ = None
 
+        try: 
+            self.vector_store = Neo4jVector(
+                embedding=embeddings_model,
+                url=self.url,
+                username=self.username, 
+                database=self.database,
+                password=self.password,
+                index_name=self.index_name,
+                node_label="Chunk",
+                embedding_node_property="embedding",
+                text_node_property="text",
+            )
+        except Exception as e:
+            logger.warning(f"Error connecting to Neo4jVector: {e}")
+
         super().__init__(
             url=self.url, 
             username=self.username,
@@ -194,6 +209,31 @@ class KnowledgeGraph(Neo4jGraph):
             logger.warning(f"Error creating NEXT relationships for chunks in Document {filename}: {e}")
 
 
+    @staticmethod
+    def _create_mentions_relationships(
+        tx: ManagedTransaction, 
+        node_id: str,
+        chunk_id: int,
+        filename: str,
+        document_version: int
+        ):
+        query = """
+            MATCH (c:Chunk {chunk_id: $chunk_id, filename: $filename, document_version: $document_version})
+            MATCH (e:__Entity__ {id: $node_id})
+            MERGE (c)-[:MENTIONS]->(e)
+        """
+        try:
+            tx.run(
+                query, 
+                node_id=node_id, 
+                chunk_id=chunk_id, 
+                filename=filename, 
+                document_version=document_version
+            )
+        except Exception as e:
+            logger.warning(f"Error creating MENTIONS relationships for {node_id}: {e}")
+
+
     def create_document_node(self, doc: ProcessedDocument):
         """
         Creates a Document node in the Knowledge Graph.
@@ -224,6 +264,25 @@ class KnowledgeGraph(Neo4jGraph):
             logger.info(f"NEXT relationships created for Document {filename} version {doc_version}")
 
 
+    def create_mentions_relationships(
+            self, 
+            node_id: str,
+            chunk_id: int,
+            filename: str,
+            document_version: int
+        ):
+        """ Creates MENTIONS relationships between Chunk and __Entity__ nodes. """
+        with self._driver.session(database=self._database) as session:
+            session.execute_write(
+                self._create_mentions_relationships, 
+                node_id,
+                chunk_id,
+                filename,
+                document_version
+            )
+            logger.info(f"MENTIONS relationships created!")
+
+
     def store_chunks_for_doc(self, doc: ProcessedDocument, embeddings_model: Embeddings):
         """
         Stores Chunk nodes for a Document into the Knowledge Graph and updates the
@@ -231,10 +290,6 @@ class KnowledgeGraph(Neo4jGraph):
         """
         
         for chunk in doc.chunks:
-
-            texts = []
-            embeddings = []
-            metadatas = []
             
             # doc level metadata
             if doc.metadata: 
@@ -249,50 +304,55 @@ class KnowledgeGraph(Neo4jGraph):
             metadata["chunk_overlap"] = chunk.chunk_overlap
             metadata["embeddings_model"] = chunk.embeddings_model
 
-            texts.append(chunk.text)
-            embeddings.append(chunk.embedding)
-            metadatas.append(metadata)
-
-            text_embedding_pairs = list(zip(texts, embeddings))
-
             try:
-                vdb = Neo4jVector(
-                    embedding=embeddings_model,
-                    url=self.url,
-                    username=self.username, 
-                    database=self.database,
-                    password=self.password,
-                    index_name=self.index_name,
-                    node_label="Chunk",
-                    embedding_node_property="embedding",
-                    text_node_property="text",
-                ).from_embeddings(
-                    text_embeddings=text_embedding_pairs,
-                    metadatas=metadatas,
-                    embedding=embeddings_model
+                self.vector_store.add_embeddings(
+                    texts=[chunk.text],
+                    embeddings=chunk.embedding,
+                    metadatas=[metadata]
                 )
             except Exception as e:
                 logger.warning(f"Error storing chunk for document {doc.filename}: {e}")
 
-        # store chunk's graph
-        if chunk.nodes is not None and chunk.relationships is not None:
+            # store chunk's graph
+            if chunk.nodes is not None :
 
-            graph_doc: GraphDocument = GraphDocument(
-                nodes=chunk.nodes,
-                relationships=chunk.relationships,
-                source=Document(
-                    page_content=chunk.text,
-                    # metadata={"id": chunk.chunk_id}
+                graph_doc: GraphDocument = GraphDocument(
+                    nodes=chunk.nodes,
+                    relationships=chunk.relationships if chunk.relationships is not None else [],
+                    source=Document(
+                        page_content=chunk.text,
+                    )
                 )
+
+                try:
+                    self.add_graph_documents(
+                        graph_documents=[graph_doc], 
+                        include_source=False,
+                        baseEntityLabel=True
+                    )
+
+                    for node in chunk.nodes:
+                        self.create_mentions_relationships(
+                            node_id=node.id, 
+                            chunk_id=chunk.chunk_id, 
+                            filename=doc.filename, 
+                            document_version=doc.document_version
+                        )
+                except Exception as e:
+                    logger.warning(f"Error storing graph for chunk {chunk.chunk_id} in document {doc.filename}: {e}")
+
+        try:
+            self.create_next_relationships(
+                filename=doc.filename,
+                doc_version=doc.document_version
             )
+        except Exception as e:
+            logger.warning(f"Error creating NEXT relationships for chunks in Document {doc.filename}: {e}")
 
-            try:
-                self.add_graph_documents(
-                    graph_documents=[graph_doc], 
-                    include_source=True
-                )
-            except Exception as e:
-                logger.warning(f"Error storing graph for chunk {chunk.chunk_id} in document {doc.filename}: {e}")
+        try: 
+            self.create_document_node(doc=doc)
+        except Exception as e:
+            logger.warning(f"Error creating Document source node for file: {doc.filename}: {e}")
 
                     #TODO add mentions relationships from chunk to document
                     # self.add_mentions_relationships()
