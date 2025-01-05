@@ -149,9 +149,9 @@ class KnowledgeGraph(Neo4jGraph):
         Returns the current number of documents collected in the Knowledge Graph
         """
         with self._driver.session(database=self._database) as session:
-            query = "MATCH (n) WHERE n.label='Document' RETURN COUNT(n) AS num_entities"
+            query = "MATCH (n: Document) RETURN COUNT(n) AS num_docs"
             result = session.run(query)
-            self.number_of_docs = result.single()["num_entities"]
+            self.number_of_docs = result.single()["num_docs"]
         return self._number_of_docs
     
 
@@ -283,9 +283,9 @@ class KnowledgeGraph(Neo4jGraph):
             logger.info(f"MENTIONS relationships created!")
 
 
-    def store_chunks_for_doc(self, doc: ProcessedDocument, embeddings_model: Embeddings):
+    def store_chunks_for_doc(self, doc: ProcessedDocument):
         """
-        Stores Chunk nodes for a Document into the Knowledge Graph and updates the
+        Stores Chunk nodes for a `ProcessedDocument` into the Knowledge Graph and updates the
         Knowledge Graph itself with the graphs extracted from each chunk, if any.
         """
         
@@ -354,6 +354,7 @@ class KnowledgeGraph(Neo4jGraph):
         except Exception as e:
             logger.warning(f"Error creating Document source node for file: {doc.filename}: {e}")
 
-                    #TODO add mentions relationships from chunk to document
-                    # self.add_mentions_relationships()
 
+    def add_documents(self, docs: List[ProcessedDocument]): 
+        for doc in docs:
+            self.store_chunks_for_doc(doc)
