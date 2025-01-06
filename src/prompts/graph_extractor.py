@@ -1,5 +1,3 @@
-from typing import List
-
 from langchain.prompts import PromptTemplate
 
 def get_graph_extractor_prompt()-> PromptTemplate:

@@ -7,7 +7,7 @@ from langchain.schema import Document
 
 from src.agents.llm import fetch_llm
 from src.config import LLMConf
-from src.graph.graph_model import Ontology, _Graph, GraphDocument, graph_document_to_digraph
+from src.graph.graph_model import Ontology, _Graph
 from src.prompts.graph_extractor import get_graph_extractor_prompt
 
 
