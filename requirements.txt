@@ -8,3 +8,4 @@ langchain-openai>=0.2.14
 langchain-text-splitters>=0.3,<0.4
 pdfplumber>=0.11.4
 python-magic>=0.4.27
+streamlit>=1.40.0
