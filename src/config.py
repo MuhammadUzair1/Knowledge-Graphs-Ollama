@@ -99,6 +99,7 @@ class KnowledgeGraphConfig(BaseModel):
     `index_name`: `str`
     `timeout`: `int`
     `ontology`: `Ontology`
+    `uri`: `str`
     """
     password: str
     db_schema :  Optional[str] = None

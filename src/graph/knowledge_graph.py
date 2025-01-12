@@ -150,7 +150,7 @@ class KnowledgeGraph(Neo4jGraph):
         with self._driver.session(database=self._database) as session:
             query = "MATCH (n: Document) RETURN COUNT(n) AS num_docs"
             result = session.run(query)
-            self.number_of_docs = result.single()["num_docs"]
+            self._number_of_docs = result.single()["num_docs"]
         return self._number_of_docs
     
 

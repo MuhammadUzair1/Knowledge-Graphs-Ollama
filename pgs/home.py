@@ -39,16 +39,16 @@ st.page_link(
     icon="🦜",
     label="Chat with the Knowledge Graph using LLM-powered Agents"
 ) 
-st.page_link(
-    page=st.Page("pgs/display.py"), 
-    icon="🕸️",
-    label="Display the Knowledge Graph or parts of it asking in natural language"
-) 
-st.page_link(
-    page=st.Page("pgs/config.py"), 
-    icon="⚙️",
-    label="Update/customize the Configuration for this web app"
-) 
+# st.page_link(
+#     page=st.Page("pgs/display.py"), 
+#     icon="🕸️",
+#     label="Display the Knowledge Graph or parts of it asking in natural language"
+# ) 
+# st.page_link(
+#     page=st.Page("pgs/config.py"), 
+#     icon="⚙️",
+#     label="Update/customize the Configuration for this web app"
+# ) 
 
 st.markdown(
     """
@@ -57,7 +57,7 @@ st.markdown(
     If you are using the Dockerized version of this app, some of them are already set up for you in the DockerFile. 
     * **Neo4j**: in this demo app, [Neo4j](https://neo4j.com/) is used both as a Vector Store as well as a Graph Database; 
         in fact, during the ingestion process, each Document is transformed in a node, 
-        and from it `Chunk` nodes are extracted (with `embeddings` sa metadata for that node), 
+        and from it `Chunk` nodes are extracted (with `embeddings` as metadata for that node), 
         while an agent is used to produce a graph representation of the content of the document. 
     * **Ollama/OpenAI API**: To power agents you will need LLMs and Embeddings models: for this demo, available options
         are to either provide [OpenAI](https://openai.com/index/openai-api/) / [Azure OpenAI](https://azure.microsoft.com/it-it/products/ai-services/openai-service) 

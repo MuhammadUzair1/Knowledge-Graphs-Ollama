@@ -1,11 +1,9 @@
 import os
-from dotenv import load_dotenv
 
 import streamlit as st
 
 from src.config import Configuration
 from src.agents.graph_qa import GraphAgentResponder
-from src.config import LLMConf, EmbedderConf, KnowledgeGraphConfig
 from src.graph.knowledge_graph import KnowledgeGraph
 from src.ingestion.embedder import ChunkEmbedder
 
@@ -58,6 +56,26 @@ if conf:
     )
 
     if knowledge_graph._driver.verify_authentication():
+        
+        a, b, c, d = st.columns(4, vertical_alignment="center")
+
+        a.metric(
+            label="# Docs in Graph",
+            value=knowledge_graph.number_of_docs,
+        )
+        b.metric(
+            label="# Labels in Graph",
+            value=knowledge_graph.number_of_labels,
+        )
+        c.metric(
+            label="# Nodes",
+            value=knowledge_graph.number_of_nodes,
+        )
+        d.metric(
+            label="# Relationships",
+            value=knowledge_graph.number_of_relationships,
+        )
+
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
