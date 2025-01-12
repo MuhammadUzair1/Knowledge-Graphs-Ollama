@@ -1,11 +1,5 @@
 import streamlit as st
 
-st.set_page_config(
-    page_title="Home",
-    page_icon="🏠",
-    initial_sidebar_state="expanded"
-)
-
 pg = st.navigation(
     [
         st.Page("pgs/home.py", title="Home", icon="🏠"),

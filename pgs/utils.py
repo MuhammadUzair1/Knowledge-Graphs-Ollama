@@ -16,7 +16,7 @@ def get_configuration_from_env() -> Configuration:
                 uri=os.getenv("NEO4J_URI"),
                 user=os.getenv("NEO4J_USERNAME"),
                 password=os.getenv("NEO4J_PASSWORD"),
-                index_name="vectors"
+                index_name=os.getenv("INDEX_NAME")
             ),
             source_conf=Source(folder=SOURCE_FOLDER),
             chunker_conf=ChunkerConf(
@@ -38,6 +38,14 @@ def get_configuration_from_env() -> Configuration:
                 deployment=os.getenv("RE_MODEL_DEPLOYMENT"),
                 api_key=os.getenv("RE_API_KEY"),
                 endpoint=os.getenv("RE_MODEL_ENDPOINT")
+            ),
+            qa_model=LLMConf(
+                type=os.getenv("QA_MODEL_TYPE"),
+                model=os.getenv("QA_MODEL_NAME"), 
+                temperature=os.getenv("QA_MODEL_TEMPERATURE"), 
+                deployment=os.getenv("QA_MODEL_DEPLOYMENT"),
+                api_key=os.getenv("QA_API_KEY"),
+                endpoint=os.getenv("QA_MODEL_ENDPOINT")
             )
         )
         return conf

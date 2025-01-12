@@ -1,6 +1,12 @@
 import streamlit as st
 
-st.write("# Welcome to the Knowledge Graphs Demo! 👋")
+st.set_page_config(
+    page_title="Home",
+    page_icon="🏠",
+    initial_sidebar_state="expanded"
+)
+
+st.write("## Welcome to the Knowledge Graphs Demo! 👋")
 
 st.markdown(
     """

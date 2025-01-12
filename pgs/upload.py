@@ -12,6 +12,21 @@ from src.ingestion.graph_miner import GraphMiner
 
 from pgs.utils import get_configuration_from_env
 
+st.set_page_config(
+    page_title="Upload",
+    page_icon="🗳️",
+    initial_sidebar_state="expanded"
+)
+
+st.markdown(
+    """
+    ## Ingestion of Files in the Graph
+    Use the box below to upload Files in `.pdf`, `.docx`, `.txt` or `.html` format.  
+    They will be uploaded inside this App's root directory Source Folder and will then be available 
+    for the ingestion process into your Knowledge Graph.  
+    """
+)
+
 
 SOURCE_FOLDER = f"{os.getcwd()}/source_docs"
 CONF_PATH = f"{os.getcwd()}/configuration.json"
