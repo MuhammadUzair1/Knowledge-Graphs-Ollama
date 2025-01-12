@@ -23,7 +23,7 @@ class KnowledgeGraph(Neo4jGraph):
         Class used to represent a Knowledge Base under graph representation, 
         using `neo4j` as the backend for querying operations.
         
-        If an `Ontology` is provided, will not allow for nodes and relationships
+        If an `Ontology` is provided (see `KnowledgeGraphConfig.ontology`), will not allow for nodes and relationships
         to be created outside of the given sets of allowed labels and relationships.
     """
 
@@ -31,7 +31,6 @@ class KnowledgeGraph(Neo4jGraph):
             self, 
             conf: KnowledgeGraphConfig,
             embeddings_model: Embeddings,
-            ontology: Optional[Ontology] = None,
             sanitize = False, 
             refresh_schema = True, 
             enhanced_schema = False
@@ -46,9 +45,9 @@ class KnowledgeGraph(Neo4jGraph):
         self.timeout = conf.timeout
         self.index_name = conf.index_name
 
-        if ontology: # TODO 
-            self.allowed_labels = ontology.allowed_labels
-            self.allowed_relationships = ontology.allowed_relations
+        if conf.ontology: # TODO 
+            self.allowed_labels = conf.ontology.allowed_labels
+            self.allowed_relationships = conf.ontology.allowed_relations
 
         self._labels_ = None 
         self._number_of_entities_ = None
