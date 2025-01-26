@@ -1,9 +1,9 @@
 from logging import getLogger
 from typing import Union, List
 
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_ollama.embeddings import OllamaEmbeddings
-from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_openai.embeddings import OpenAIEmbeddings, AzureOpenAIEmbeddings
 
 from src.config import EmbedderConf
 from src.schema import ProcessedDocument
@@ -21,7 +21,7 @@ class ChunkEmbedder:
             logger.info(f"Embedder of type '{self.conf.type}' initialized.")
 
 
-    def get_embeddings(self) -> Union[HuggingFaceEmbeddings, OllamaEmbeddings, OpenAIEmbeddings, None]:
+    def get_embeddings(self) -> Union[HuggingFaceEmbeddings, OllamaEmbeddings, OpenAIEmbeddings, AzureOpenAIEmbeddings, None]:
 
         if self.conf.type == "ollama":
             embeddings = OllamaEmbeddings(
@@ -32,6 +32,16 @@ class ChunkEmbedder:
                 model=self.conf.model,
                 api_key=self.conf.api_key,
                 deployment=self.conf.deployment,
+            )
+        elif self.conf.type == "azure-openai":
+            embeddings = AzureOpenAIEmbeddings(
+                model=self.conf.model, 
+                azure_endpoint=self.conf.endpoint,
+                azure_deployment=self.conf.deployment,
+                dimensions=1536,
+                api_key=self.conf.api_key,
+                api_version=self.conf.api_version
+                
             )
         elif self.conf.type == "trf":
             embeddings = HuggingFaceEmbeddings(

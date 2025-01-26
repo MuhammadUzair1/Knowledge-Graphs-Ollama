@@ -29,7 +29,8 @@ def get_configuration_from_env() -> Configuration:
                 model=os.getenv("EMBEDDINGS_MODEL_NAME"),
                 api_key=os.getenv("EMBEDDINGS_API_KEY"),
                 deployment=os.getenv("EMBEDDINGS_DEPLOYMENT"),
-                endpoint=os.getenv("EMBEDDINGS_ENDPOINT")
+                endpoint=os.getenv("EMBEDDINGS_ENDPOINT"), 
+                api_version=os.getenv("EMBEDDINGS_API_VERSION")
             ),
             re_model_conf=LLMConf(
                 type=os.getenv("RE_MODEL_TYPE"),
@@ -37,7 +38,8 @@ def get_configuration_from_env() -> Configuration:
                 temperature=os.getenv("RE_MODEL_TEMPERATURE"), 
                 deployment=os.getenv("RE_MODEL_DEPLOYMENT"),
                 api_key=os.getenv("RE_API_KEY"),
-                endpoint=os.getenv("RE_MODEL_ENDPOINT")
+                endpoint=os.getenv("RE_MODEL_ENDPOINT"),
+                api_version=os.getenv("RE_MODEL_API_VERSION") or None
             ),
             qa_model=LLMConf(
                 type=os.getenv("QA_MODEL_TYPE"),
@@ -45,7 +47,8 @@ def get_configuration_from_env() -> Configuration:
                 temperature=os.getenv("QA_MODEL_TEMPERATURE"), 
                 deployment=os.getenv("QA_MODEL_DEPLOYMENT"),
                 api_key=os.getenv("QA_API_KEY"),
-                endpoint=os.getenv("QA_MODEL_ENDPOINT")
+                endpoint=os.getenv("QA_MODEL_ENDPOINT"),
+                api_version=os.getenv("QA_MODEL_API_VERSION") or None
             )
         )
         return conf

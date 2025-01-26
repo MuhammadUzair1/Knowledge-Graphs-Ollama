@@ -16,6 +16,7 @@ class ModelType(str, Enum):
     Type of embedders available in the toolkit
     """
     TRANSFORMERS = "trf"
+    AZURE_OPENAI = "azure-openai"
     OPENAI = "openai"
     OLLAMA = "ollama"
 
@@ -59,6 +60,7 @@ class LLMConf(BaseModel):
     deployment: Optional[str]=None
     api_key: Optional[str]=None
     endpoint: Optional[str]=None
+    api_version: Optional[str] = None
 
 
 class EmbedderConf(BaseModel):
@@ -79,6 +81,7 @@ class EmbedderConf(BaseModel):
     deployment: Optional[str] = None
     api_key: Optional[str] = None
     endpoint: Optional[str] = None
+    api_version: Optional[str] = None
 
 
 class KnowledgeGraphConfig(BaseModel):
@@ -107,7 +110,7 @@ class KnowledgeGraphConfig(BaseModel):
     port:  Optional[int] = None
     user: Optional[str] = None
     database: Optional[str] = None
-    index_name: str = "vector"
+    index_name: str = "vectors"
     timeout: int=5000
     ontology: Optional[Ontology] = None
     uri: Optional[str] = None

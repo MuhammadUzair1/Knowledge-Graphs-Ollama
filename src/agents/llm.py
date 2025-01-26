@@ -1,6 +1,6 @@
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_ollama.chat_models import ChatOllama
-from langchain_openai.chat_models import ChatOpenAI
+from langchain_openai.chat_models import ChatOpenAI, AzureChatOpenAI
 from langchain_community.chat_models.huggingface import ChatHuggingFace
 from logging import getLogger
 
@@ -26,6 +26,15 @@ def fetch_llm(conf: LLMConf) -> BaseChatModel | None:
             api_key=conf.api_key,
             deployment=conf.deployment,
             temperature=conf.temperature,
+        )
+    elif conf.type == "azure-openai":
+        llm = AzureChatOpenAI(
+            model=conf.model,
+            azure_endpoint=conf.endpoint,
+            azure_deployment=conf.deployment,
+            api_key=conf.api_key,
+            temperature=conf.temperature,
+            api_version=conf.api_version
         )
     elif conf.type == "trf":
         llm = ChatHuggingFace(

@@ -36,6 +36,8 @@ conf = None
 uploaded_files = None
 st.session_state['ingest_clicked'] = False
 st.session_state["cleanup_clicked"] = False
+st.session_state["index_created"] = False
+
 
 try:
     conf = Configuration.from_file(CONF_PATH)
@@ -88,6 +90,10 @@ if len(uploaded_files) > 0:
             )
             if not knowledge_graph._driver.verify_authentication():
                 st.error("Check your Neo4j Configuration!")
+            
+            if not st.session_state["index_created"]:
+                if not knowledge_graph.index_exists():
+                    st.session_state["index_created"] = knowledge_graph.create_index()
             
             else:
                 st.write("Loading..")
