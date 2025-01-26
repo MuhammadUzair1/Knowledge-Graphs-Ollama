@@ -81,6 +81,7 @@ class KnowledgeGraph(Neo4jGraph):
             refresh_schema=refresh_schema,
             enhanced_schema=enhanced_schema
         )
+        
 
     @property
     def labels(self) -> List[str]:
@@ -152,7 +153,7 @@ class KnowledgeGraph(Neo4jGraph):
             result = session.run(query)
             self._number_of_docs = result.single()["num_docs"]
         return self._number_of_docs
-    
+
 
     @staticmethod
     def _create_document_node(tx: ManagedTransaction, doc: ProcessedDocument):
@@ -232,6 +233,22 @@ class KnowledgeGraph(Neo4jGraph):
         except Exception as e:
             logger.warning(f"Error creating MENTIONS relationships for {node_id}: {e}")
 
+        
+    def index_exists(self) -> bool:
+        dimensions, index_ent_type = self.vector_store.retrieve_existing_index()
+        if not dimensions:
+            return False
+        else:
+            return True      
+    
+    
+    def create_index(self) -> bool:
+        try:
+            self.vector_store.create_new_index()
+            return True
+        except:
+            return False
+    
 
     def create_document_node(self, doc: ProcessedDocument):
         """
