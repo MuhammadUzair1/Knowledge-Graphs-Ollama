@@ -1,7 +1,8 @@
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_groq.chat_models import ChatGroq
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI, AzureChatOpenAI
-from langchain_community.chat_models.huggingface import ChatHuggingFace
+from langchain_huggingface.chat_models.huggingface import ChatHuggingFace
 from logging import getLogger
 
 from src.config import LLMConf
@@ -35,6 +36,12 @@ def fetch_llm(conf: LLMConf) -> BaseChatModel | None:
             api_key=conf.api_key,
             temperature=conf.temperature,
             api_version=conf.api_version
+        )
+    elif conf.type == "groq":
+        llm = ChatGroq(
+            model=conf.model, 
+            api_key=conf.api_key,
+            temperature=conf.temperature
         )
     elif conf.type == "trf":
         llm = ChatHuggingFace(

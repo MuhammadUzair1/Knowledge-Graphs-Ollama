@@ -15,10 +15,12 @@ class ModelType(str, Enum):
     """
     Type of embedders available in the toolkit
     """
-    TRANSFORMERS = "trf"
     AZURE_OPENAI = "azure-openai"
+    GROQ = "groq"
     OPENAI = "openai"
     OLLAMA = "ollama"
+    TRANSFORMERS = "trf"
+
 
 
 class ChunkerType(str, Enum):
@@ -51,7 +53,7 @@ class LLMConf(BaseModel):
     `temperature`: LLM temperature param
     `deployment`: represents the name of the deployment.
     `model`: represents the name of the model
-    `api_key`: reference to the OpenAI key, if any
+    `api_key`: reference to the OpenAI (or Groq, or Azure OpenAI) API key, if any
     `endpoint`: reference to the endpoint of the model, if any
     """
     model: str
@@ -73,7 +75,7 @@ class EmbedderConf(BaseModel):
     `type`: LLM `ModelType` 
     `deployment`: represents the name of the deployment.
     `model`: represents the name of the model
-    `api_key`: reference to the OpenAI key, if any
+    `api_key`: reference to the OpenAI (or Azure OpenAI) API key, if any
     `endpoint`: reference to the endpoint of the model, if any
     """
     type: ModelType = "openai"
