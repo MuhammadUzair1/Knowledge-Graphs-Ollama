@@ -41,13 +41,14 @@ def fetch_llm(conf: LLMConf) -> BaseChatModel | None:
         llm = ChatGroq(
             model=conf.model, 
             api_key=conf.api_key,
-            temperature=conf.temperature
+            temperature=conf.temperature,
+            max_retries=3
         )
     elif conf.type == "trf":
         llm = ChatHuggingFace(
             model=conf.model,
             endpoint=conf.endpoint,
-            temperature=conf.temperature,
+            temperature=conf.temperature
         )
 
     else:

@@ -50,9 +50,10 @@ if conf:
     )
 
     responder = GraphAgentResponder(
-        qa_llm_conf=conf.qa_model, # TODO try different LLMs
+        qa_llm_conf=conf.qa_model,
         cypher_llm_conf=conf.qa_model,
-        graph=knowledge_graph
+        graph=knowledge_graph,
+        rephrase_llm_conf=conf.qa_model
     )
 
     if knowledge_graph._driver.verify_authentication():
