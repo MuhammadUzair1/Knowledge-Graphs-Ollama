@@ -1,5 +1,5 @@
 import os
-
+import shutil
 import streamlit as st
 
 from src.config import Configuration
@@ -91,9 +91,10 @@ if len(uploaded_files) > 0:
             if not knowledge_graph._driver.verify_authentication():
                 st.error("Check your Neo4j Configuration!")
             
-            if not st.session_state["index_created"]:
-                if not knowledge_graph.index_exists():
-                    st.session_state["index_created"] = knowledge_graph.create_index()
+            # TODO 
+            # if not st.session_state["index_created"]:
+            #     if not knowledge_graph.index_exists():
+            #         st.session_state["index_created"] = knowledge_graph.create_index()
             
             else:
                 st.write("Loading..")
@@ -131,7 +132,6 @@ if len(uploaded_files) > 0:
             )
 
         if st.session_state["cleanup_clicked"]:
-            for file in os.listdir(SOURCE_FOLDER):
-                os.remove(file_path)
+            shutil.rmtree(SOURCE_FOLDER)
             st.info("Cleanup Completed!")
             

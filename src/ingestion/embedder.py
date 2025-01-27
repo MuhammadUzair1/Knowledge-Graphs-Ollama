@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import Union, List
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain_ollama.embeddings import OllamaEmbeddings
 from langchain_openai.embeddings import OpenAIEmbeddings, AzureOpenAIEmbeddings
 

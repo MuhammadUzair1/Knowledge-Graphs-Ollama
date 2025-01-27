@@ -63,5 +63,8 @@ st.markdown(
         are to either provide [OpenAI](https://openai.com/index/openai-api/) / [Azure OpenAI](https://azure.microsoft.com/it-it/products/ai-services/openai-service) 
         API Key and endpoints or to have [Ollama](https://ollama.com/) installed in your machine.
     * **Documents**: Documents coming from a specific domain to ingest; available formats are `.pdf`, `.docx`, `.txt`, `.html`.
-"""
+    * **Configuration**: in order for this Demo to work, you should either have all the settings for Neo4j, LLMs.. 
+        inside your environment or a configuration file at the following path: `knowledge-graphs/configuration.json`. 
+        See the repository's README for further details on the settings. 
+    """
 )
