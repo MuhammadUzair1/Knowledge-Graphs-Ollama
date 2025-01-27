@@ -160,8 +160,7 @@ class KnowledgeGraph(Neo4jGraph):
         query = """
             CREATE (d:Document {
                 filename: $filename,
-                document_version: $document_version,
-                source: $source
+                document_version: $document_version
             })
         """
         try:
@@ -170,11 +169,10 @@ class KnowledgeGraph(Neo4jGraph):
                 filename=doc.filename, 
                 document_version=doc.document_version, 
                 metadata=doc.metadata, 
-                source=doc.source
             )
             logger.info(f"Document node created for file: {doc.filename}")
         except Exception as e:
-            logger.warning(f"Error creating Document node for file: {doc.filename}")
+            logger.warning(f"Error creating Document node for file: {doc.filename}: {e}")
 
 
     @staticmethod
@@ -336,7 +334,7 @@ class KnowledgeGraph(Neo4jGraph):
                     nodes=chunk.nodes,
                     relationships=chunk.relationships if chunk.relationships is not None else [],
                     source=Document(
-                        page_content=chunk.text,
+                        page_content=chunk.text
                     )
                 )
 

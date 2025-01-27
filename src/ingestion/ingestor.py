@@ -1,3 +1,4 @@
+import os
 import magic
 from abc import abstractmethod
 from typing import List, Tuple, Optional, Dict, Any
@@ -91,16 +92,18 @@ class Ingestor:
         Loads a file from a path and turn it into a `ProcessedDocument`
         """
 
+        base_name = os.path.basename(filename)
+
         document_pages = self.load_file(filename, metadata)
 
         try: 
             document_content = self.merge_pages(document_pages)
         except(TypeError):
             logger.warning(f"Empty document {filename}, skipping..")
-
+        
         if document_content is not None:
             processed_doc = self.create_processed_document(
-                filename, 
+                base_name, 
                 document_content, 
                 metadata
             )

@@ -123,8 +123,7 @@ if len(uploaded_files) > 0:
 
         if status._current_state == "complete":
             st.success(body=f"Done with the Ingestion of {len(docs)} Files")
-            # TODO cleanup is brutal for now. 
-            # Why don't just check in KG if Doc with that filename is  already there?
+
             st.session_state["cleanup_clicked"] = st.button(
                 label="Cleanup Folder",
                 help=f"Clicking this will delete files in folder {SOURCE_FOLDER}",
