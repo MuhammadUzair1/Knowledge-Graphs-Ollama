@@ -5,7 +5,7 @@ def get_rephrase_prompt() -> PromptTemplate:
     prompt = """
         Your task is to rephrase a user's question based on the schema of a Graph Database that will be given to you. 
 
-        Do not mention anything else, just rephrase the question from the user to be as ccherent as possible with the schema of the graph.
+        Do not mention anything else, just rephrase the question from the user to be as coherent as possible with the schema of the graph.
         Do not make things up or add any information on your own. 
 
         SCHEMA: {schema}
