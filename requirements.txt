@@ -8,7 +8,7 @@ langchain-huggingface>=0.1.2
 langchain-neo4j>=0.2.0
 langchain-ollama>=0.2.2
 langchain-openai==0.2.12
-langchain-text-splitters>=0.3,<0.4ù
+langchain-text-splitters>=0.3,<0.4
 networkx
 pdfplumber>=0.11.4
 python-magic>=0.4.27

@@ -1,0 +1,8 @@
+.venv/
+.vscode/
+.gitignore
+README.md
+assets/
+source_folder/
+*__pycache__
+__pycache__/
