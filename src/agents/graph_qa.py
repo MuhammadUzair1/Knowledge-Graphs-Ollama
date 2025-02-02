@@ -45,7 +45,10 @@ class GraphAgentResponder:
         if rephrase_llm_conf:
             self.rephrase_llm = fetch_llm(rephrase_llm_conf)
             self.rephrase_prompt = get_rephrase_prompt()
-            self.rephrase_prompt.partial_variables = {"schema": self.graph.get_structured_schema}
+            self.rephrase_prompt.partial_variables = {
+                "graph_labels": self.graph.labels,
+                "graph_relationships": self.graph.relationships
+            }
 
 
     def answer(self, query: str, filter:Optional[Dict[str, Any]]=None) -> str:
@@ -55,7 +58,7 @@ class GraphAgentResponder:
         Results from both this methods are synthetized in a comprehensive answer.
 
         If a configuration is provided for the rephrasing LLM, it will be used 
-        to rephrase the user query according to the KnowledgeGraph schema. 
+        to rephrase the user's query according to the `KnowledgeGraph` schema. 
         """
         context = ""
         
