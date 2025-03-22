@@ -21,9 +21,9 @@ class GraphMiner:
 
     def mine_graph_from_doc_chunks(self, doc: ProcessedDocument) -> ProcessedDocument:
         """
-        Mines a graph from a `ProcessedDocument` instance.
+        Mines a graph from a `ProcessedDocument` instance. 
         """
-
+        
         for chunk in doc.chunks:
             try:
                 graph: _Graph = self.graph_extractor.extract_graph(chunk.text)
