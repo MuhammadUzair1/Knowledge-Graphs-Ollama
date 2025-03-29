@@ -9,7 +9,10 @@ langchain-neo4j>=0.2.0
 langchain-ollama>=0.2.2
 langchain-openai==0.2.12
 langchain-text-splitters>=0.3,<0.4
+leidenalg>=0.10.2
 networkx
 pdfplumber>=0.11.4
+python-igraph>=0.11.8
+python-louvain>=0.16
 python-magic>=0.4.27
 streamlit>=1.40.0

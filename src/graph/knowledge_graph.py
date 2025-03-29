@@ -1,5 +1,7 @@
+import networkx as nx
+
 from logging import getLogger
-from typing import Optional, List
+from typing import List, Optional
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
@@ -9,8 +11,8 @@ from langchain_neo4j.vectorstores.neo4j_vector import Neo4jVector
 from neo4j import ManagedTransaction
 
 from src.config import KnowledgeGraphConfig
-from src.graph.graph_model import Ontology
 from src.schema import ProcessedDocument
+from src.graph.utils import compute_centralities, detect_leiden_communities, detect_louvain_communities
 
 
 logger = getLogger(__name__)
@@ -372,3 +374,97 @@ class KnowledgeGraph(Neo4jGraph):
     def add_documents(self, docs: List[ProcessedDocument]): 
         for doc in docs:
             self.store_chunks_for_doc(doc)
+
+
+    def get_digraph(self) -> nx.DiGraph:
+        """ 
+        Returns the Knowledge Graph under its `networkx.DiGraph` representation.
+        """
+        query_nodes = """
+            MATCH (n)  
+            RETURN elementId(n) AS node_id, labels(n) AS labels, properties(n) AS properties;
+        """
+
+        query_rels = """
+            MATCH (n)-[r]->(m)  
+            RETURN elementId(n) AS source, elementId(m) AS target, type(r) AS rel_type, properties(r) AS properties;
+        """
+
+        G = nx.DiGraph()
+        
+        with self._driver.session() as session:
+            
+            nodes = session.run(query_nodes)
+            for record in nodes:
+                G.add_node(record["node_id"], labels=record["labels"], **record["properties"])
+
+            relationships = session.run(query_rels)
+            for record in relationships:
+                G.add_edge(record["source"], record["target"], type=record["rel_type"], **record["properties"])
+
+        logger.info(f"DiGraph with {len(G.nodes)} nodes and {len(G.edges)} relationships")  
+
+        return G
+    
+    
+    def update_neo4j(
+        self, 
+        G: Optional[nx.DiGraph] = None, 
+        centralities: bool=False,
+        leiden_communities: bool=False, 
+        louvain_communities: bool=False, 
+        leiden_modularity: Optional[float] = None,
+        louvain_modularity: Optional[float] = None, 
+        ):
+        """Update Neo4j nodes with Leiden/Louvain community and centrality scores"""
+        with driver.session() as session:
+            for node, data in G.nodes(data=True):
+                query = """
+                MATCH (n) WHERE elementId(n) = $node_id
+                SET n.community = $community,
+                    n.pagerank = $pagerank,
+                    n.betweenness = $betweenness
+                """
+                session.run(query, 
+                            node_id=node, 
+                            community=int(data.get("community", -1)), 
+                            pagerank=float(data.get("pagerank", 0.0)), 
+                            betweenness=float(data.get("betweenness", 0.0)))
+
+    
+    def update_centralities_and_communities(self):
+        """ 
+        Computes centralities measures and detects communities in nodes across the Knowledge Graph. 
+        """
+
+        lv = False
+        louvain_mod = None
+        ld = False
+        leiden_mod = None
+        centralities = False
+
+        G = self.get_digraph()
+
+        try: 
+            G, louvain_mod = detect_louvain_communities(G, return_modularity=True)
+            lv = True
+        except Exception as e:
+            logger.warning(f"Something went wrong detecting Louvain Communities: {e}")
+        
+        try:
+            G, leiden_mod = detect_leiden_communities(G, return_modularity=True)
+            ld = True
+        except Exception as e:
+            logger.warning(f"Something went wrong detecting Leiden Communities: {e}")
+
+        try:
+            G = compute_centralities(G)
+            centralities = True
+        except Exception as e:
+            logger.warning(f"Something went wrong computing Centralities degrees on graph: {e}")
+        
+        try:
+            self.update_neo4j(G, centralities, ld, lv, leiden_mod, louvain_mod)
+        
+        except Exception as e:
+            logger.warning(f"Something went wrong computing Centralities degrees on graph: {e}")
