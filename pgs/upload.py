@@ -91,7 +91,7 @@ if len(uploaded_files) > 0:
             if not knowledge_graph._driver.verify_authentication():
                 st.error("Check your Neo4j Configuration!")
             
-            # TODO 
+            # # TODO 
             # if not st.session_state["index_created"]:
             #     if not knowledge_graph.index_exists():
             #         st.session_state["index_created"] = knowledge_graph.create_index()

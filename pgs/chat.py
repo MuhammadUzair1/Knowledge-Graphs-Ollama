@@ -33,7 +33,7 @@ CONF_PATH = f"{os.getcwd()}/configuration.json"
 env = False
 conf = None
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [{"role": "assistant", "content": "Hi, you can ask me questions about the Documents in the Knowledge Graph"}]
 
 try:
     conf = Configuration.from_file(CONF_PATH)
@@ -80,9 +80,6 @@ if conf:
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
-
-        with st.chat_message("assistant"):
-            st.write("Hi, you can ask me questions about the Documents in the Knowledge Graph")
         
         # Accept user input
         if prompt := st.chat_input("What are the available nodes in the Graph?"):
