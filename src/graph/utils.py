@@ -1,10 +1,12 @@
+import community
 import networkx as nx
-from community import best_partition, modularity
+
 from igraph import Graph
 from leidenalg import find_partition, ModularityVertexPartition
 from logging import getLogger
+from neo4j import Query, Session
+from typing import Any, Dict, Tuple
 
-from typing import Tuple
 
 logger = getLogger(__name__)
 
@@ -17,7 +19,7 @@ def detect_louvain_communities(G: nx.DiGraph, return_modularity:bool=True) -> nx
     """
     G_undirected = G.to_undirected()
 
-    partition = best_partition(G_undirected)  # Louvain method
+    partition = community.best_partition(G_undirected)  # Louvain method
 
     nx.set_node_attributes(G, partition, "community_louvain")  # Store communities in node attributes
 
@@ -26,7 +28,7 @@ def detect_louvain_communities(G: nx.DiGraph, return_modularity:bool=True) -> nx
         return G
     
     else: 
-        modularity = modularity(partition, G_undirected)
+        modularity = community.modularity(partition, G_undirected)
 
         logger.info(f"Modularity based on Louvain communities: {modularity}")
 
@@ -81,3 +83,76 @@ def compute_centralities(G: nx.DiGraph | nx.Graph) -> nx.DiGraph | nx.Graph:
     nx.set_node_attributes(G, cc, "closeness")
     
     return G
+
+
+def update_modularity(session: Session, mod: float, mod_type: str="leiden"):
+    """
+    Save Leiden or Louvain modularity score as a graph-wide property (inside a node).
+    
+    params: 
+    -------
+    `session`: `Session`  
+        Neo4j Session
+    `mod`: `float`  
+        Modularity score
+    `mod_type`: `str`
+        Either `leiden` or `louvain`
+    """
+    if mod_type in ["leiden", "louvain"]:   
+        try:
+            session.run(
+                f"""MERGE (m:GraphMetric {{name: '{mod_type}_modularity'}}) SET m.value = $modularity""", 
+                modularity=mod
+            )
+        except Exception as e:
+            logger.warning(f"Issue updating Leiden modularity property: {e}") 
+    else:
+        raise NotImplementedError("This Modularity type has not been implemented.")   
+    
+    
+def build_update_query(
+        node_id, 
+        centralities=False, 
+        leiden_communities=False, 
+        louvain_communities=False,
+        community_leiden: int=-1, 
+        community_louvain: int=-1, 
+        pagerank: float=0.0, 
+        betweenness: float=0.0,
+        closeness: float=0.0 
+    ) -> Tuple[Query, Dict[str, Any]]:
+    """ 
+    Returns `Query` and `dict`with parameters to update node properies
+    """
+    
+    # Base query
+    query = "MATCH (n) WHERE elementId(n) = $node_id\n"
+
+    # List to hold SET clauses
+    set_clauses = []
+    parameters = {"node_id": node_id}
+
+    if leiden_communities:
+        set_clauses.append("n.community_leiden = $community_leiden")
+        parameters["community_leiden"] = community_leiden
+
+    if louvain_communities:
+        set_clauses.append("n.community_louvain = $community_louvain")
+        parameters["community_louvain"] = community_louvain
+
+    if centralities:
+        set_clauses.append("n.pagerank = $pagerank")
+        set_clauses.append("n.betweenness = $betweenness")
+        set_clauses.append("n.closeness = $closeness")
+        parameters.update(
+            {"pagerank": pagerank, 
+             "betweenness": betweenness, 
+             "closeness": closeness
+            }
+        )
+
+    # Only add SET if there's something to update
+    if set_clauses:
+        query += "SET " + ",\n    ".join(set_clauses)  # Join clauses with proper formatting
+
+    return query, parameters

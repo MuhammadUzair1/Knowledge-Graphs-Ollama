@@ -12,7 +12,13 @@ from neo4j import ManagedTransaction
 
 from src.config import KnowledgeGraphConfig
 from src.schema import ProcessedDocument
-from src.graph.utils import compute_centralities, detect_leiden_communities, detect_louvain_communities
+from src.graph.utils import (
+    build_update_query,
+    compute_centralities, 
+    detect_leiden_communities, 
+    detect_louvain_communities, 
+    update_modularity
+)
 
 
 logger = getLogger(__name__)
@@ -407,7 +413,7 @@ class KnowledgeGraph(Neo4jGraph):
         return G
     
     
-    def update_neo4j(
+    def update_properties(
         self, 
         G: Optional[nx.DiGraph] = None, 
         centralities: bool=False,
@@ -416,21 +422,39 @@ class KnowledgeGraph(Neo4jGraph):
         leiden_modularity: Optional[float] = None,
         louvain_modularity: Optional[float] = None, 
         ):
-        """Update Neo4j nodes with Leiden/Louvain community and centrality scores"""
-        with driver.session() as session:
-            for node, data in G.nodes(data=True):
-                query = """
-                MATCH (n) WHERE elementId(n) = $node_id
-                SET n.community = $community,
-                    n.pagerank = $pagerank,
-                    n.betweenness = $betweenness
-                """
-                session.run(query, 
-                            node_id=node, 
-                            community=int(data.get("community", -1)), 
-                            pagerank=float(data.get("pagerank", 0.0)), 
-                            betweenness=float(data.get("betweenness", 0.0)))
-
+        """Update Neo4j nodes with Leiden/Louvain communities and centrality scores"""
+        with self._driver.session() as session:
+            
+            if any([centralities, leiden_communities, louvain_communities]) == True: 
+                
+                for node, data in G.nodes(data=True):
+                    
+                    query, params = build_update_query(
+                        node_id=node, 
+                        centralities=centralities,
+                        leiden_communities=leiden_communities,
+                        louvain_communities=louvain_communities,
+                        community_leiden=int(data.get("community_leiden", -1)),
+                        community_louvain=int(data.get("community_louvain", -1)),
+                        pagerank=float(data.get("pagerank", 0.0)), 
+                        betweenness=float(data.get("betweenness", 0.0)),
+                        closeness=float(data.get("closeness", 0.0))
+                    )
+                    try:
+                        session.run(query, params)
+                    except Exception as e:
+                        logger.warning(f"Update Query failed for node_id: {node}")
+                
+                logger.info("Updated nodes properties in Graph")  
+                
+            if leiden_modularity is not None: 
+                update_modularity(session, leiden_modularity, "leiden")
+                logger.info("Updated Leiden Modularity property in Graph")  
+                
+            if louvain_modularity is not None:
+                update_modularity(session, louvain_modularity, "louvain")
+                logger.info("Updated Louvain Modularity property in Graph")  
+                
     
     def update_centralities_and_communities(self):
         """ 
@@ -464,7 +488,6 @@ class KnowledgeGraph(Neo4jGraph):
             logger.warning(f"Something went wrong computing Centralities degrees on graph: {e}")
         
         try:
-            self.update_neo4j(G, centralities, ld, lv, leiden_mod, louvain_mod)
-        
+            self.update_properties(G, centralities, ld, lv, leiden_mod, louvain_mod)
         except Exception as e:
-            logger.warning(f"Something went wrong computing Centralities degrees on graph: {e}")
+            logger.warning(f"Something went wrong while updating properties on graph nodes: {e}")
