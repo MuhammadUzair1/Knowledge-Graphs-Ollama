@@ -1,4 +1,4 @@
-from logging import getLogger
+from src.utils.logger import get_logger
 from typing import Union, List
 
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
@@ -8,7 +8,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings, AzureOpenAIEmbeddings
 from src.config import EmbedderConf
 from src.schema import ProcessedDocument
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ChunkEmbedder:

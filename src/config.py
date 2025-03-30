@@ -1,5 +1,5 @@
 import json
-from logging import getLogger
+from src.utils.logger import get_logger
 
 from enum import Enum
 from pydantic import BaseModel
@@ -8,7 +8,7 @@ from typing import Optional
 from src.graph.graph_model import Ontology
 
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ModelType(str, Enum):

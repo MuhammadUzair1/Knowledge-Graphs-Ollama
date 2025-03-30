@@ -1,4 +1,4 @@
-from logging import getLogger
+from src.utils.logger import get_logger
 from typing import List, Optional
 
 from src.agents.graph_extractor import GraphExtractor
@@ -6,7 +6,7 @@ from src.graph.graph_model import _Graph, Ontology, map_to_lc_graph
 from src.config import LLMConf
 from src.schema import ProcessedDocument
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GraphMiner:

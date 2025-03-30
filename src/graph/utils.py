@@ -3,12 +3,12 @@ import networkx as nx
 
 from igraph import Graph
 from leidenalg import find_partition, ModularityVertexPartition
-from logging import getLogger
+from src.utils.logger import get_logger
 from neo4j import Query, Session
 from typing import Any, Dict, Tuple
 
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def detect_louvain_communities(G: nx.DiGraph, return_modularity:bool=True) -> nx.DiGraph | Tuple[nx.DiGraph, float]:

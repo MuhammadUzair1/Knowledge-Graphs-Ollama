@@ -1,11 +1,11 @@
 import re
-from logging import getLogger
+from src.utils.logger import get_logger
 from typing import List
 
 from src.schema import ProcessedDocument
 
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Cleaner:

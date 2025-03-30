@@ -1,4 +1,4 @@
-from logging import getLogger
+from src.utils.logger import get_logger
 from typing import Optional, Any, Dict
 
 from langchain_core.messages import BaseMessage
@@ -10,7 +10,7 @@ from src.graph.knowledge_graph import KnowledgeGraph
 from src.prompts.graph_qa import get_rephrase_prompt, get_summarization_prompt
 
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GraphAgentResponder:

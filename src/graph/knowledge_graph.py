@@ -1,6 +1,6 @@
 import networkx as nx
 
-from logging import getLogger
+from src.utils.logger import get_logger
 from typing import List, Optional
 
 from langchain_core.documents import Document
@@ -21,7 +21,7 @@ from src.graph.utils import (
 )
 
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 BASE_ENTITY_LABEL = "__Entity__"
 

@@ -1,6 +1,6 @@
 import random 
 
-from logging import getLogger
+from src.utils.logger import get_logger
 from typing import Optional, List
 
 from src.agents.llm import fetch_llm
@@ -10,7 +10,7 @@ from src.prompts.ontology_explorer import get_ontology_creation_prompt
 from src.schema import ProcessedDocument
 
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class OntologyExplorer:

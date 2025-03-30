@@ -1,4 +1,4 @@
-from logging import getLogger
+from src.utils.logger import get_logger
 from typing import Optional
 
 # from langchain_neo4j.graphs.graph_document import Relationship, Node
@@ -11,7 +11,7 @@ from src.graph.graph_model import Ontology, _Graph
 from src.prompts.graph_extractor import get_graph_extractor_prompt
 
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GraphExtractor:
