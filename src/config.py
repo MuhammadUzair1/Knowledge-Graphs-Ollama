@@ -131,6 +131,7 @@ class Configuration(BaseModel):
     `document_source`: configuration storing informations on where to fetch documents from
     `re_model_conf`: configuration for the LLM in charge of extracting relationships from documents
     `embedder_conf`: configuration for the Embeddings model that will create vectors out of documents
+    `summarizer_conf`: configuration for the LLM in charge of summarizing communities out of Chunks and other nodes
     `qa_model`: configuration for the Q&A model (LLM) that will interact with the user
     """
     database: KnowledgeGraphConfig
@@ -138,6 +139,7 @@ class Configuration(BaseModel):
     source_conf: Optional[Source] = None
     re_model_conf: Optional[LLMConf] = None
     embedder_conf: Optional[EmbedderConf] = None
+    summarizer_conf: Optional[LLMConf] = None
     qa_model: Optional[LLMConf] = None
     
     

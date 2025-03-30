@@ -6,7 +6,7 @@ from langchain_neo4j.graphs.graph_document import Node, Relationship
 
 
 class Chunk(BaseModel):
-    chunk_id: int
+    chunk_id: int | str
     text: str
     embedding: Optional[List[float]] = None
     chunk_size: int=1000

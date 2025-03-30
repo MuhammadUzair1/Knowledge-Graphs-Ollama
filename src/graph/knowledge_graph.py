@@ -1,17 +1,15 @@
 import networkx as nx
 
-from src.utils.logger import get_logger
-from typing import List, Optional
-
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_neo4j.graphs.graph_document import GraphDocument
 from langchain_neo4j.graphs.neo4j_graph import Neo4jGraph
 from langchain_neo4j.vectorstores.neo4j_vector import Neo4jVector
 from neo4j import ManagedTransaction
+from typing import List, Optional
 
 from src.config import KnowledgeGraphConfig
-from src.schema import ProcessedDocument
+from src.graph.graph_model import Community, CommunityReport
 from src.graph.utils import (
     build_update_query,
     compute_centralities, 
@@ -19,6 +17,8 @@ from src.graph.utils import (
     detect_louvain_communities, 
     update_modularity
 )
+from src.schema import Chunk, ProcessedDocument
+from src.utils.logger import get_logger
 
 
 logger = get_logger(__name__)
@@ -56,6 +56,8 @@ class KnowledgeGraph(Neo4jGraph):
         if conf.ontology: # TODO 
             self.allowed_labels = conf.ontology.allowed_labels
             self.allowed_relationships = conf.ontology.allowed_relations
+            
+        self.embeddings = embeddings_model
 
         self._labels_ = None 
         self._number_of_entities_ = None
@@ -66,7 +68,7 @@ class KnowledgeGraph(Neo4jGraph):
 
         try: 
             self.vector_store = Neo4jVector(
-                embedding=embeddings_model,
+                embedding=self.embeddings,
                 url=self.url,
                 username=self.username, 
                 database=self.database,
@@ -238,8 +240,47 @@ class KnowledgeGraph(Neo4jGraph):
             )
         except Exception as e:
             logger.warning(f"Error creating MENTIONS relationships for {node_id}: {e}")
-
+            
+            
+    @staticmethod
+    def _fetch_communities(tx: ManagedTransaction, comm_type: str="leiden"): 
+        query = f""" 
+            MATCH (n)-[r]-(m)  
+            WHERE n.community_{comm_type} IS NOT NULL
+            OPTIONAL MATCH (chunk:Chunk) WHERE chunk.community_{comm_type} = n.community_{comm_type}  
+            WITH 
+                '{comm_type}' AS community_type, 
+                n.community_{comm_type} AS community_id, 
+                count(DISTINCT n) AS community_size, 
+                collect(DISTINCT elementId(n)) AS entity_ids,
+                collect(DISTINCT n.name) AS names,
+                collect(DISTINCT elementId(r)) AS relationship_ids,  
+                collect(DISTINCT type(r)) AS relationship_types,
+                collect(DISTINCT elementId(chunk)) AS chunk_ids    
+            RETURN 
+                community_type, 
+                community_id, 
+                community_size, 
+                entity_ids, 
+                names, 
+                relationship_ids, 
+                relationship_types,
+                chunk_ids
+            ORDER BY community_size DESC
+        """
+        return list(tx.run(query))
+    
+    
+    @staticmethod
+    def _fetch_chunk(tx: ManagedTransaction, element_id: str):
+        query = f"""
+            MATCH (c:Chunk) 
+            WHERE elementId(c) = "{element_id}"
+            RETURN elementId(c) AS chunk_id, c.text AS text
+        """
+        return list(tx.run(query))
         
+
     def index_exists(self) -> bool:
         dimensions, index_ent_type = self.vector_store.retrieve_existing_index()
         if not dimensions:
@@ -491,3 +532,87 @@ class KnowledgeGraph(Neo4jGraph):
             self.update_properties(G, centralities, ld, lv, leiden_mod, louvain_mod)
         except Exception as e:
             logger.warning(f"Something went wrong while updating properties on graph nodes: {e}")
+
+
+    def get_communities(self, comm_type: str = "leiden") -> List[Community]:
+        """ 
+        Fetches communities from the Knowledge Graph 
+        """
+        
+        if comm_type in ["leiden", "louvain"]:
+            
+            communities = []
+            
+            with self._driver.session() as session:
+                
+                try:
+                    results = session.execute_read(self._fetch_communities) 
+                except Exception as e:
+                    logger.warning(f"Issue fetching communities for type {comm_type}: {e}")
+                    
+                for r in results: 
+                    
+                    if r['names'] not in [["leiden_modularity"], ["louvain_modularity"]]: # avoid GraphMetric
+                        
+                        comm = Community(
+                            community_type=comm_type, 
+                            community_id=r["community_id"], 
+                            community_size=r["community_size"],
+                            entity_ids=r["entity_ids"],
+                            entity_names=r["names"],
+                            relationship_ids=r["relationship_ids"],
+                            relationship_types=r["relationship_types"]
+                        )
+                        
+                        # add chunks to community
+                        comm.chunks = []
+                        if len(r["chunk_ids"]) > 0:
+                            for id in r["chunk_ids"]:
+                                try: 
+                                    c_res = session.execute_read(self._fetch_chunk, element_id=id)
+                                    
+                                    comm.chunks.append(Chunk(chunk_id=c_res[0]["chunk_id"], text=c_res[0]["text"]))
+                                except Exception as e:
+                                    logger.warning(f"Issue fetching chunk with elementId {id}: {e}")
+                        
+                        communities.append(comm)
+                
+                return communities
+        
+        else:
+            raise NotImplementedError("This Community type has not been implemented.")  
+        
+        
+    def store_community_reports(self, reports: List[CommunityReport]):
+        """ 
+        Stores Community Reports in the Graph, to make them available for GraphRAG strategies.
+        """
+        
+        cr_store = Neo4jVector(
+            embedding=self.embeddings,
+            url=self.url,
+            username=self.username, 
+            database=self.database,
+            password=self.password,
+            index_name=self.index_name,
+            node_label="CommunityReport",
+            embedding_node_property="summary_embeddings",
+            text_node_property="summary",
+        )
+        
+        for report in reports:
+            
+            metadatas = {
+                "community_type": report.communtiy_type,
+                "community_id": report.community_id,
+                "community_size": report.community_size
+            }
+            
+            try:
+                cr_store.add_embeddings(
+                    texts=[report.summary],
+                    embeddings=[report.summary_embeddings],
+                    metadatas=[metadatas]
+                )
+            except Exception as e:
+                logger.warning(f"Error saving Community Report: {e}")
