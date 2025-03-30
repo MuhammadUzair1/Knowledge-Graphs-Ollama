@@ -1,13 +1,13 @@
-from src.utils.logger import get_logger
 from typing import Optional, Any, Dict
 
 from langchain_core.messages import BaseMessage
 from langchain_neo4j.chains.graph_qa.cypher import GraphCypherQAChain
 
-from src.agents.llm import fetch_llm
 from src.config import LLMConf
 from src.graph.knowledge_graph import KnowledgeGraph
+from src.factory.llm import fetch_llm
 from src.prompts.graph_qa import get_rephrase_prompt, get_summarization_prompt
+from src.utils.logger import get_logger
 
 
 logger = get_logger(__name__)
