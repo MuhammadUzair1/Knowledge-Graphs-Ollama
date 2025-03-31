@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from src.config import KnowledgeGraphConfig
 from src.graph.graph_model import Community, CommunityReport
-from src.graph.utils import (
+from src.graph.graph_ds import (
     build_update_query,
     compute_centralities, 
     detect_leiden_communities, 
@@ -77,6 +77,21 @@ class KnowledgeGraph(Neo4jGraph):
                 node_label="Chunk",
                 embedding_node_property="embedding",
                 text_node_property="text",
+            )
+        except Exception as e:
+            logger.warning(f"Error connecting to Neo4jVector: {e}")
+            
+        try:
+            self.cr_store = Neo4jVector(
+                embedding=self.embeddings,
+                url=self.url,
+                username=self.username, 
+                database=self.database,
+                password=self.password,
+                index_name="reports",
+                node_label="CommunityReport",
+                embedding_node_property="summary_embeddings",
+                text_node_property="summary",
             )
         except Exception as e:
             logger.warning(f"Error connecting to Neo4jVector: {e}")
@@ -417,6 +432,11 @@ class KnowledgeGraph(Neo4jGraph):
         except Exception as e:
             logger.warning(f"Error creating Document source node for file: {doc.filename}: {e}")
 
+        try:
+            self.vector_store.create_new_index()
+        except Exception as e:
+            logger.warning(f"Error creating Index for chunks: {e}")
+
 
     def add_documents(self, docs: List[ProcessedDocument]): 
         for doc in docs:
@@ -588,18 +608,6 @@ class KnowledgeGraph(Neo4jGraph):
         Stores Community Reports in the Graph, to make them available for GraphRAG strategies.
         """
         
-        cr_store = Neo4jVector(
-            embedding=self.embeddings,
-            url=self.url,
-            username=self.username, 
-            database=self.database,
-            password=self.password,
-            index_name=self.index_name,
-            node_label="CommunityReport",
-            embedding_node_property="summary_embeddings",
-            text_node_property="summary",
-        )
-        
         for report in reports:
             
             metadatas = {
@@ -609,10 +617,16 @@ class KnowledgeGraph(Neo4jGraph):
             }
             
             try:
-                cr_store.add_embeddings(
+                self.cr_store.add_embeddings(
                     texts=[report.summary],
                     embeddings=[report.summary_embeddings],
                     metadatas=[metadatas]
                 )
             except Exception as e:
                 logger.warning(f"Error saving Community Report: {e}")
+                
+        try:
+            self.cr_store.create_new_index()
+        except Exception as e:
+            logger.warning(f"Error creating Index for CommunityReports: {e}")
+                
