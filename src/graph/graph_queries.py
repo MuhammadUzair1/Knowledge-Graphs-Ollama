@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import networkx as nx
 from neo4j import Query, Session
 
@@ -16,24 +16,100 @@ def document_metadata(session: Session, filename: str, version: Optional[int]) -
     pass
 
 
-def get_neighbouring_chunks(session: Session, chunk: Chunk) -> Tuple[Chunk | None, Chunk | None]:
+def get_adjacent_chunks(session: Session, chunk: Chunk) -> Tuple[Chunk | None, Chunk | None, Chunk | None]:
     """
-    Returns a tuple with the previous and the following `Chunk` 
+    Returns a tuple with the previous , current and following `Chunk` 
     given an initial node characterised by a `filename` and a `chunk_id`
     """
-    pass
+    base_query = """ 
+        MATCH (current:Chunk)
+        WHERE elementId(current) = $elementId
+
+        OPTIONAL MATCH (prev:Chunk)-[:NEXT]->(current)
+        OPTIONAL MATCH (current)-[:NEXT]->(next:Chunk)
+
+        RETURN prev AS previous_chunk, current, next AS next_chunk
+    """
+    try: 
+        result = session.run(base_query, elementId=chunk.chunk_id)
+        record = result.single()
+        
+        previous_chunk = dict(record["previous_chunk"]) if record["previous_chunk"] else None
+        if previous_chunk:
+            previous_chunk = Chunk(
+                chunk_id=previous_chunk['chunk_id'],
+                filename=previous_chunk['filename'],
+                text=previous_chunk["text"],
+            )
+            chunk.chunk_id = previous_chunk.chunk_id + 1 # original chunk id
+        next_chunk = dict(record["next_chunk"]) if record["next_chunk"] else None
+        if next_chunk:
+            next_chunk = Chunk(
+                chunk_id=next_chunk['chunk_id'],
+                filename=next_chunk['filename'],
+                text=next_chunk["text"],
+            )
+            chunk.chunk_id = next_chunk.chunk_id-1 # original chunk id
+        
+        return previous_chunk, chunk, next_chunk
+    except Exception as e:
+        logger.warning(f"Unable to retrieve adjacent chunks for Chunk: {chunk.chunk_id}")
+        return None, chunk, None
 
 
-def get_mentioned_entities(session: Session, chunk: Chunk, n_hops: int=1) -> dict:
+def get_mentioned_entities(session: Session, chunk: Chunk, n_hops: int=1) -> List[Dict[str, Any]]:
     """ 
     Follows the `MENTIONS` relationships of a given Chunk in the Graph and collects mentioned entities. 
     `n_hops` is used to indicate the number of relationship layers that could be done following entities linking.  
     """
-    pass
+    # TODO perform n-hops retrieval
+    base_query = """
+        MATCH (c:Chunk)
+        WHERE elementId(c) = $elementId
+        MATCH (c)-[:MENTIONS]->(mentioned)
+        RETURN collect(mentioned) AS mentioned_nodes
+    """
+    nodes = []
+    try: 
+        result= session.run(base_query, elementId=chunk.chunk_id)
+        record = result.single()
+        mentioned_nodes = record["mentioned_nodes"] if record else []
+        for node in mentioned_nodes:
+            nodes.append(dict(node))
+    
+        logger.info(f"Retrieved {len(nodes)} entities for chunk {chunk.chunk_id}")
+        
+        return nodes
+    
+    except Exception as e:
+        logger.warning(f"No mentioned entities retrieved with exception: {e}")
+        return []
 
 
-def filter_graph_by_communities(session: Session, community_ids: List[int], community_type: str="leiden"):
+def filter_graph_by_communities(session: Session, community_ids: List[int], community_type: str="leiden") -> List[Dict[str, Any]]:
     """
     Creates a temporary  view of the Knowledge Graph to filter it into subgraphs given community ids.
     """
-    pass
+    query = f"""
+        MATCH (n)-[r]->(m)
+        WHERE n.community_{community_type} IN $community_values
+        RETURN n, r, m
+    """
+    try:
+        result = session.run(query, community_values=community_ids)
+        
+        subgraph = []
+        
+        for record in result:
+            # Collecting nodes and relationships as dictionaries
+            subgraph.append({
+                "node_1": dict(record["n"]),
+                "relationship": dict(record["r"]),
+                "node_2": dict(record["m"])
+            })
+        
+        return subgraph
+    
+    except Exception as e:
+        print(f"Error while fetching subgraph: {e}")
+        return []

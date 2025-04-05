@@ -65,6 +65,10 @@ class KnowledgeGraph(Neo4jGraph):
         self._number_of_relationships_ = None
         self._number_of_docs = None
         self._relationships_ = None
+        self._leiden_modularity = None
+        self._number_of_leiden_communities = None
+        self._louvain_modularity = None
+        self._number_of_louvain_communities = None
 
         try: 
             self.vector_store = Neo4jVector(
@@ -178,7 +182,64 @@ class KnowledgeGraph(Neo4jGraph):
             result = session.run(query)
             self._number_of_docs = result.single()["num_docs"]
         return self._number_of_docs
-
+    
+    
+    @property
+    def leiden_modularity(self) -> float:
+        query = """MATCH (m:GraphMetric WHERE m.name = 'leiden_modularity') RETURN m.value AS mod"""
+        with self._driver.session(database=self._database) as session:
+            try: 
+                result = session.run(query)
+                self._leiden_modularity = result.single().value()
+                return self._leiden_modularity
+            except Exception as e:
+                logger.warning("Leiden Modularity has not been computed")
+        
+            
+                
+    @property
+    def louvain_modularity(self) -> float:
+        query = """MATCH (m:GraphMetric WHERE m.name = 'louvain_modularity') RETURN m.value AS mod"""
+        with self._driver.session(database=self._database) as session:
+            try: 
+                result = session.run(query)
+                self._louvain_modularity = result.single().value()
+                return self._louvain_modularity
+            except Exception as e:
+                logger.warning("Louvain Modularity has not been computed")
+                
+    
+    @property
+    def number_of_louvain_communities(self) -> int:
+        query = """
+            MATCH (n)
+            WHERE n.community_louvain IS NOT NULL
+            RETURN count(DISTINCT n.community_louvain) AS num_communities
+        """
+        with self._driver.session(database=self._database) as session:
+            try: 
+                result = session.run(query)
+                self._number_of_louvain_communities = result.single()["num_communities"]
+                return self._number_of_louvain_communities
+            except Exception as e:
+                logger.warning("Louvain communities have not been detected yet")
+                
+                
+    @property
+    def number_of_leiden_communities(self) -> int:
+        query = """
+            MATCH (n)
+            WHERE n.community_leiden IS NOT NULL
+            RETURN count(DISTINCT n.community_leiden) AS num_communities
+        """
+        with self._driver.session(database=self._database) as session:
+            try: 
+                result = session.run(query)
+                self._number_of_leiden_communities = result.single()["num_communities"]
+                return self._number_of_leiden_communities
+            except Exception as e:
+                logger.warning("Leiden communities have not been detected yet")
+                
 
     @staticmethod
     def _create_document_node(tx: ManagedTransaction, doc: ProcessedDocument):

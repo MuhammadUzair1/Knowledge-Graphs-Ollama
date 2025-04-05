@@ -49,7 +49,41 @@ class GraphAgentResponder:
                 "graph_labels": self.graph.labels,
                 "graph_relationships": self.graph.relationships
             }
-
+            
+        
+    def answer_with_cypher(self, query: str) -> str:
+        """ 
+        Uses only the Cypher chain to answer the user's question.
+        """
+        pass
+    
+    
+    def answer_with_context(self, query: str, use_adjacent_chunks: bool=False)-> str:
+        """ 
+        Uses only vanilla RAG to answer the user's question.  
+        If `use_adjacent_chunks=True` will query the graph for additional context 
+        compared to the Chunks retrieved by the similarity search. Latency will be higher due to expanded context. 
+        """
+        pass
+    
+    
+    def answer_with_community_reports(self, query: str, use_adjacent_chunks: bool=False) -> str: 
+        """ 
+        Queries two vector indexes to get the user's answer:
+            1. one made of a list of `CommunityReport`
+            2. one made of a list of `Chunk` 
+            
+        If `use_adjacent_chunks=True` will query the graph for additional context 
+        compared to the Chunks retrieved by the similarity search. Latency will be higher due to expanded context. 
+        """
+        pass
+    
+    
+    def answer_with_communities_subgraph(self, query: str, community_ids = "louvain", community_type: str = "leiden") -> str: 
+        """ Answers after querying for communities"""
+        pass
+    
+    
 
     def answer(self, query: str, filter:Optional[Dict[str, Any]]=None) -> str:
         """ 
@@ -81,6 +115,7 @@ class GraphAgentResponder:
                     input=self.rephrase_prompt.format(
                         question=query)
                     ).content
+                logger.info(f"Rephrased Question: {rephrased_question}")
             except Exception as e:
                 logger.warning(f"Failed to rephrase user question with exception: {e}")
                 rephrased_question = None

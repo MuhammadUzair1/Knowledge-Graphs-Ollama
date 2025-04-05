@@ -8,6 +8,7 @@ from langchain_neo4j.graphs.graph_document import Node, Relationship
 class Chunk(BaseModel):
     chunk_id: int | str
     text: str
+    filename: Optional[str] = None
     embedding: Optional[List[float]] = None
     chunk_size: int=1000
     chunk_overlap: int=100
