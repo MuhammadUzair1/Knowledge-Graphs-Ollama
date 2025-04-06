@@ -689,5 +689,4 @@ class KnowledgeGraph(Neo4jGraph):
         try:
             self.cr_store.create_new_index()
         except Exception as e:
-            logger.warning(f"Error creating Index for CommunityReports: {e}")
-                
+            logger.warning(f"Error creating Index for CommunityReports: {e}")       

@@ -16,45 +16,66 @@ def document_metadata(session: Session, filename: str, version: Optional[int]) -
     pass
 
 
-def get_adjacent_chunks(session: Session, chunk: Chunk) -> Tuple[Chunk | None, Chunk | None, Chunk | None]:
+def get_adjacent_chunks(session: Session, chunk: Chunk, use_elementId: bool=False) -> Tuple[Chunk | None, Chunk , Chunk | None]:
     """
     Returns a tuple with the previous , current and following `Chunk` 
-    given an initial node characterised by a `filename` and a `chunk_id`
+    given an initial node characterised by a `filename` and a `chunk_id`.  
+    If `use_elementId` is set to `True`, will use the elementId of the chunk instead. 
     """
-    base_query = """ 
-        MATCH (current:Chunk)
-        WHERE elementId(current) = $elementId
+    if use_elementId:
+        base_query = """ 
+            MATCH (current:Chunk)
+            WHERE elementId(current) = $elementId
 
-        OPTIONAL MATCH (prev:Chunk)-[:NEXT]->(current)
-        OPTIONAL MATCH (current)-[:NEXT]->(next:Chunk)
+            OPTIONAL MATCH (prev:Chunk)-[:NEXT]->(current)
+            OPTIONAL MATCH (current)-[:NEXT]->(next:Chunk)
 
-        RETURN prev AS previous_chunk, current, next AS next_chunk
-    """
-    try: 
-        result = session.run(base_query, elementId=chunk.chunk_id)
-        record = result.single()
+            RETURN prev AS previous_chunk, current, next AS next_chunk
+        """
+        try: 
+            result = session.run(base_query, elementId=chunk.chunk_id)
+            record = result.single()
+        except Exception as e:
+            logger.warning(f"Unable to retrieve adjacent chunks for Chunk: {chunk.chunk_id}")
+            return None, chunk, None
         
-        previous_chunk = dict(record["previous_chunk"]) if record["previous_chunk"] else None
-        if previous_chunk:
-            previous_chunk = Chunk(
-                chunk_id=previous_chunk['chunk_id'],
-                filename=previous_chunk['filename'],
-                text=previous_chunk["text"],
-            )
-            chunk.chunk_id = previous_chunk.chunk_id + 1 # original chunk id
-        next_chunk = dict(record["next_chunk"]) if record["next_chunk"] else None
-        if next_chunk:
-            next_chunk = Chunk(
-                chunk_id=next_chunk['chunk_id'],
-                filename=next_chunk['filename'],
-                text=next_chunk["text"],
-            )
-            chunk.chunk_id = next_chunk.chunk_id-1 # original chunk id
+    else: 
+        base_query = """ 
+            MATCH (current:Chunk)
+            WHERE current.chunk_id = $chunk_id AND current.filename = $filename
+
+            OPTIONAL MATCH (prev:Chunk)-[:NEXT]->(current)
+            OPTIONAL MATCH (current)-[:NEXT]->(next:Chunk)
+
+            RETURN prev AS previous_chunk, current, next AS next_chunk
+        """
         
-        return previous_chunk, chunk, next_chunk
-    except Exception as e:
-        logger.warning(f"Unable to retrieve adjacent chunks for Chunk: {chunk.chunk_id}")
-        return None, chunk, None
+        try: 
+            result = session.run(base_query, chunk_id=chunk.chunk_id, filename=chunk.filename)
+            record = result.single()
+        except Exception as e:
+            logger.warning(f"Unable to retrieve adjacent chunks for Chunk: {chunk.chunk_id}")
+            return None, chunk, None
+    
+    previous_chunk = dict(record["previous_chunk"]) if record["previous_chunk"] else None
+    if previous_chunk:
+        previous_chunk = Chunk(
+            chunk_id=previous_chunk['chunk_id'],
+            filename=previous_chunk['filename'],
+            text=previous_chunk["text"],
+        )
+        chunk.chunk_id = previous_chunk.chunk_id + 1 # original chunk id
+    next_chunk = dict(record["next_chunk"]) if record["next_chunk"] else None
+    if next_chunk:
+        next_chunk = Chunk(
+            chunk_id=next_chunk['chunk_id'],
+            filename=next_chunk['filename'],
+            text=next_chunk["text"],
+        )
+        chunk.chunk_id = next_chunk.chunk_id-1 # original chunk id
+    
+    return previous_chunk, chunk, next_chunk
+
 
 
 def get_mentioned_entities(session: Session, chunk: Chunk, n_hops: int=1) -> List[Dict[str, Any]]:

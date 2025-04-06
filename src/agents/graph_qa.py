@@ -1,12 +1,14 @@
-from typing import Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Tuple
 
 from langchain_core.messages import BaseMessage
 from langchain_neo4j.chains.graph_qa.cypher import GraphCypherQAChain
 
 from src.config import LLMConf
+from src.graph.graph_queries import get_adjacent_chunks, get_mentioned_entities, filter_graph_by_communities
 from src.graph.knowledge_graph import KnowledgeGraph
 from src.factory.llm import fetch_llm
-from src.prompts.graph_qa import get_rephrase_prompt, get_summarization_prompt
+from src.prompts.graph_qa import get_question_answering_prompt, get_rephrase_prompt, get_summarization_prompt
+from src.schema import Chunk
 from src.utils.logger import get_logger
 
 
@@ -29,6 +31,7 @@ class GraphAgentResponder:
         self.graph = graph
         self.qa_llm = fetch_llm(qa_llm_conf)
         self.cypher_llm = fetch_llm(cypher_llm_conf)
+        self.qa_prompt = get_question_answering_prompt()
 
         self.summarize_prompt = get_summarization_prompt()
 
@@ -51,36 +54,113 @@ class GraphAgentResponder:
             }
             
         
-    def answer_with_cypher(self, query: str) -> str:
+    def answer_with_cypher(self, query: str, intermediate_steps: bool=False) -> str | Tuple[str, List]:
         """ 
         Uses only the Cypher chain to answer the user's question.
         """
-        pass
-    
-    
+        
+        if self.rephrase_llm:
+            try: 
+                rephrased_question = self.rephrase_llm.invoke(input=self.rephrase_prompt.format(question=query)).content
+                logger.info(f"Rephrased Question: {rephrased_question}")
+            except Exception as e:
+                logger.warning(f"Failed to rephrase user question with exception: {e}")
+                rephrased_question = None
+        else:
+            rephrased_question = None
+            
+        try:
+            graph_qa_output = self.graph_qa_chain._call(
+                inputs={"query": rephrased_question} if rephrased_question is not None else {"query": query}
+            )
+            if intermediate_steps:
+                return graph_qa_output["result"], graph_qa_output["intermediate_steps"]
+            else: 
+                return graph_qa_output["result"]
+        except Exception as e:
+            logger.warning(f"Problem Answering with CYPHER chain: {e}")
+            
+            
     def answer_with_context(self, query: str, use_adjacent_chunks: bool=False)-> str:
         """ 
         Uses only vanilla RAG to answer the user's question.  
         If `use_adjacent_chunks=True` will query the graph for additional context 
         compared to the Chunks retrieved by the similarity search. Latency will be higher due to expanded context. 
         """
-        pass
+        context = ""
+        
+        try:
+            context_docs = self.graph.vector_store.similarity_search(query=query)
+        except Exception as e:
+            logger.warning(f"Failed to retrieve context with exception: {e}")
+            context_docs = []
+        
+        if use_adjacent_chunks:
+            for doc in context_docs:
+    
+                current_chunk = Chunk(
+                    chunk_id=doc.metadata["chunk_id"],
+                    text=doc.page_content,
+                    filename=doc.metadata["filename"]
+                )
+                # search adjacent chunks 
+                with self.graph._driver.session() as session:
+                    prev_chunk, current_chunk, next_chunk = get_adjacent_chunks(session, current_chunk)
+                    session.close()
+                
+                context += f"\n {prev_chunk.text}" if prev_chunk is not None else ""
+                context += f"\n {current_chunk.text}"
+                context += f"\n {next_chunk.text}" if next_chunk is not None else ""
+        else: 
+            for doc in context_docs:
+                context += f"\n {doc.page_content}"
+            
+        answer: BaseMessage = self.qa_llm.invoke(
+            input=self.qa_prompt.format(
+                question=query, 
+                context=context, 
+            )
+        )
+
+        return answer.content
     
     
-    def answer_with_community_reports(self, query: str, use_adjacent_chunks: bool=False) -> str: 
+    def answer_with_community_reports(self, query: str, use_adjacent_chunks: bool=False, community_type: str="leiden") -> str: 
         """ 
-        Queries two vector indexes to get the user's answer:
+        Queries two vector indexes to get the user's answer out of an ensamble of contexts:
             1. one made of a list of `CommunityReport`
             2. one made of a list of `Chunk` 
             
         If `use_adjacent_chunks=True` will query the graph for additional context 
         compared to the Chunks retrieved by the similarity search. Latency will be higher due to expanded context. 
         """
-        pass
+        context = ""
+        
+        try:
+            reports_and_scores = self.graph.cr_store.similarity_search_with_relevance_scores(
+                query=query, 
+                k=3, 
+                filter={"community_type": community_type}
+            )
+            
+        except Exception as e:
+            logger.warning(f"Failed to retrieve Community Reports with exception: {e}")
+            
+        return reports_and_scores
+            
+        
+        
     
     
-    def answer_with_communities_subgraph(self, query: str, community_ids = "louvain", community_type: str = "leiden") -> str: 
-        """ Answers after querying for communities"""
+    def answer_with_communities_subgraph(self, query: str, community_ids: List[str], community_type: str = "leiden") -> str: 
+        """ 
+        Answers after querying for communities:
+        * read the most relevant community report 
+        * fetch chunks belonging to the most relevant community (the one from the community report)
+        * follow the MENTIONS relationship of each Chunk and obtain a dictionary 
+        * fetch the community subgraph under the form of another dictionary 
+        * passes the dictionaries + the report to a reconciler agent to decide how to answer 
+        """
         pass
     
     
