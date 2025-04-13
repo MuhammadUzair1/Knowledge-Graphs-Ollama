@@ -20,10 +20,20 @@ st.set_page_config(
 
 st.markdown(
     """
-    ## Ingestion of Files in the Graph
+    ## 🗳️ Ingestion of Files in the Graph 🕸️ 
+    
     Use the box below to upload Files in `.pdf`, `.docx`, `.txt` or `.html` format.  
     They will be uploaded inside this App's root directory Source Folder and will then be available 
     for the ingestion process into your Knowledge Graph.  
+    
+    Each uploaded file will be passed into a pipeline that will; 
+    * load it into a json format;
+    * cleaning its text;
+    * divide its text into smaller pieces, called chunks;
+    * embed each chunk into its vector representation;
+    * use a LLM model to extract a graph of concepts from each chunk;
+    * upload the obtained vectors and entities into the Knowledge Graph;
+    * update the centralities measures and the division of the Graph into communities.
     """
 )
 

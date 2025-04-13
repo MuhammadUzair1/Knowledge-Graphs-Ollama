@@ -1,25 +1,12 @@
-# knowledge-graphs
-Repo created to create and interact with knowledge graphs 
+# Knowledge Graphs 
+Repo created to build and interact with Knowledge Graphs 
 
-## Graph QA
-A typical graph query to “Find the top 10 most cited articles” would look like this:
+## What is a Knowledge Graph?
+A Knowledge Graph is a structured representation of information that connects concepts, entities, and their relationships in a way that mimics human understanding. It is often used to organize and integrate data from various sources, enabling machines to reason, infer, and retrieve relevant information more effectively.
 
-````
-MATCH(n:Article) 
-WHERE n.citation_count > 50
-RETURN n.title, n.citation_count
-````
+The key features of Knowledge Graphs can be divided in:
 
-## Vector Search:
-“Find articles about climate change” would look like this in Semantic Retrieval:
-````
-query = "Find articles about climate change? "
-vectorstore = Neo4jVector.from_existing_graph(**args)
-vectorstore.similarity_search(query, k=3)
-````
-
-
-## Core GraphRAG Retrieval Pattern:
-1. Do a vector search to find an initial set of nodes
-2. Traverse the graph around those nodes to add context
-3. (Optional:) Rank the results using the graph and pass the top-k documents to the LLM
+* Entities (Nodes): represent real-world objects like people, places, organizations, or abstract concepts;
+* Relationships (Edges): define how entities are connected between them (i.e: “Bill → WORKS_AT → Microsoft”);
+* Attributes (Properties): provide additional details about entities (e.g., Microsoft’s founding year, revenue, or location) or relationships ( i.e. “Bill → FRIENDS_WITH {since: 2021} → Mark”);
+* Ontology (Schema): defines the structure and rules of the graph, ensuring consistency across the represented knowledge.
