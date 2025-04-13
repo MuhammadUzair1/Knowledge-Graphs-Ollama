@@ -1,5 +1,7 @@
 # Knowledge Graphs 
-> ℹ️ last updated April 13th, 2025.
+> ℹ️ last updated April 13th, 2025.  
+
+![dalle](assets/dalle_kg.png)
 
 This is a work in progress repository where I collect my experiments on building software for RAG applications based on Knowledge Graphs. 
 
