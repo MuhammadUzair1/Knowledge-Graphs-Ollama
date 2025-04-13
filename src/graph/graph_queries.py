@@ -16,7 +16,11 @@ def document_metadata(session: Session, filename: str, version: Optional[int]) -
     pass
 
 
-def get_adjacent_chunks(session: Session, chunk: Chunk, use_elementId: bool=False) -> Tuple[Chunk | None, Chunk , Chunk | None]:
+def get_adjacent_chunks(
+    session: Session, 
+    chunk: Chunk, 
+    use_elementId: bool=False
+    ) -> Tuple[Chunk | None, Chunk , Chunk | None]:
     """
     Returns a tuple with the previous , current and following `Chunk` 
     given an initial node characterised by a `filename` and a `chunk_id`.  
@@ -78,35 +82,64 @@ def get_adjacent_chunks(session: Session, chunk: Chunk, use_elementId: bool=Fals
 
 
 
-def get_mentioned_entities(session: Session, chunk: Chunk, n_hops: int=1) -> List[Dict[str, Any]]:
+def get_mentioned_entities(
+    session: Session, 
+    chunk: Chunk,
+    n_hops: int=1, 
+    use_elementId: bool = False
+    ) -> List[Dict[str, Any]]:
     """ 
     Follows the `MENTIONS` relationships of a given Chunk in the Graph and collects mentioned entities. 
     `n_hops` is used to indicate the number of relationship layers that could be done following entities linking.  
     """
-    # TODO perform n-hops retrieval
-    base_query = """
-        MATCH (c:Chunk)
-        WHERE elementId(c) = $elementId
-        MATCH (c)-[:MENTIONS]->(mentioned)
-        RETURN collect(mentioned) AS mentioned_nodes
-    """
     nodes = []
-    try: 
-        result= session.run(base_query, elementId=chunk.chunk_id)
-        record = result.single()
-        mentioned_nodes = record["mentioned_nodes"] if record else []
-        for node in mentioned_nodes:
-            nodes.append(dict(node))
     
-        logger.info(f"Retrieved {len(nodes)} entities for chunk {chunk.chunk_id}")
+    # TODO perform n-hops retrieval
+    if use_elementId:
+        base_query = """
+            MATCH (c:Chunk)
+            WHERE elementId(c) = $elementId
+            MATCH (c)-[:MENTIONS]->(mentioned)
+            RETURN collect(mentioned) AS mentioned_nodes
+        """
+        try: 
+            result= session.run(base_query, elementId=chunk.chunk_id)
+            record = result.single()
+            mentioned_nodes = record["mentioned_nodes"] if record else []
+            for node in mentioned_nodes:
+                nodes.append(dict(node))
         
-        return nodes
+            logger.info(f"Retrieved {len(nodes)} entities for chunk {chunk.chunk_id}")
+            
+            return nodes
+        
+        except Exception as e:
+            logger.warning(f"No mentioned entities retrieved with exception: {e}")
+            return []
     
-    except Exception as e:
-        logger.warning(f"No mentioned entities retrieved with exception: {e}")
-        return []
-
-
+    else: 
+        base_query = """ 
+            MATCH (c:Chunk)
+            WHERE c.chunk_id = $chunk_id AND c.filename = $filename
+            MATCH (c)-[:MENTIONS]->(mentioned)
+            RETURN collect(mentioned) AS mentioned_nodes
+        """
+        try: 
+            result= session.run(base_query, chunk_id=chunk.chunk_id, filename=chunk.filename)
+            record = result.single()
+            mentioned_nodes = record["mentioned_nodes"] if record else []
+            for node in mentioned_nodes:
+                nodes.append(dict(node))
+        
+            logger.info(f"Retrieved {len(nodes)} entities for chunk {chunk.chunk_id}")
+            
+            return nodes
+        
+        except Exception as e:
+            logger.warning(f"No mentioned entities retrieved with exception: {e}")
+            return []
+        
+        
 def filter_graph_by_communities(session: Session, community_ids: List[int], community_type: str="leiden") -> List[Dict[str, Any]]:
     """
     Creates a temporary  view of the Knowledge Graph to filter it into subgraphs given community ids.
@@ -114,19 +147,30 @@ def filter_graph_by_communities(session: Session, community_ids: List[int], comm
     query = f"""
         MATCH (n)-[r]->(m)
         WHERE n.community_{community_type} IN $community_values
+            AND NOT n:Chunk
+            AND NOT m:Chunk
         RETURN n, r, m
     """
+    
+    keys_to_remove = {
+        'community_louvain', 'community_leiden', 'pagerank',
+        'id', 'betweenness', 'closeness'
+    }
+    
     try:
         result = session.run(query, community_values=community_ids)
         
         subgraph = []
-        
+    
         for record in result:
-            # Collecting nodes and relationships as dictionaries
+            node_1 = {k: v for k, v in dict(record["n"]).items() if k not in keys_to_remove}
+            node_2 = {k: v for k, v in dict(record["m"]).items() if k not in keys_to_remove}
+            relationship = dict(record["r"])
+            
             subgraph.append({
-                "node_1": dict(record["n"]),
-                "relationship": dict(record["r"]),
-                "node_2": dict(record["m"])
+                "node_1": node_1,
+                "relationship": relationship,
+                "node_2": node_2
             })
         
         return subgraph

@@ -52,6 +52,35 @@ def get_rephrase_prompt() -> PromptTemplate:
     return template
 
 
+def get_qa_prompt_with_subgraph() -> PromptTemplate:
+    
+    prompt = """ 
+        You are a helpful virtual assistant.  
+        Your task is provide a relevant and precise answer to the user's question, given context information 
+        from a Knowledge Graph. 
+        
+        In the context you will find:  
+        * one or more SUMMARY OF COMMUNITY CHUNKS;
+        * the COMMUNITY GRAPH represented as a list of dictionaries;
+        * the CHUNKS in that community;
+        * the MENTIONED ENTITIES in each chunk.
+        
+        Do not make things up or add any information on your own.  
+        If the context is not relevant to the user's question, just say that you don't know. 
+        Maintain the core information from the context.  
+        
+        Context: {context}
+        Question: {question}
+        Helpful Answer: 
+    """
+    
+    template = PromptTemplate.from_template(prompt)
+    
+    template.input_variables = ["context", "question"]
+    
+    return template
+
+
 def get_summarization_prompt() -> PromptTemplate:
 
     prompt = """
