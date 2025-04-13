@@ -3,11 +3,11 @@ from langchain_groq.chat_models import ChatGroq
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI, AzureChatOpenAI
 from langchain_huggingface.chat_models.huggingface import ChatHuggingFace
-from logging import getLogger
+from src.utils.logger import get_logger
 
 from src.config import LLMConf
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def fetch_llm(conf: LLMConf) -> BaseChatModel | None:

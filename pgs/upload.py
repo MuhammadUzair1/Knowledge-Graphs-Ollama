@@ -114,7 +114,10 @@ if len(uploaded_files) > 0:
 
                 st.write("Uploading Data to Knowledge Graph..")
                 knowledge_graph.add_documents(docs)
-
+                
+                st.write("Updating Communities and computing Centralities in the Graph..")
+                knowledge_graph.update_centralities_and_communities()
+                
                 status.update(
                     label="Done with the Ingestion", 
                     state="complete", 
