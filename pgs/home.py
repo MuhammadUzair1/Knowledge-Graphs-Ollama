@@ -59,12 +59,13 @@ st.markdown(
         in fact, during the ingestion process, each Document is transformed in a node, 
         and from it `Chunk` nodes are extracted (with `embeddings` as metadata for that node), 
         while an agent is used to produce a graph representation of the content of the document. 
-    * **Ollama/OpenAI API**: To power agents you will need LLMs and Embeddings models: for this demo, available options
-        are to either provide [OpenAI](https://openai.com/index/openai-api/) / [Azure OpenAI](https://azure.microsoft.com/it-it/products/ai-services/openai-service) 
-        API Key and endpoints or to have [Ollama](https://ollama.com/) installed in your machine.
+    * **Ollama/OpenAI/Groq API**: To power agents you will need LLMs and Embeddings models. 
+        For this demo, available options are to either provide [OpenAI](https://openai.com/index/openai-api/) / [Azure OpenAI](https://azure.microsoft.com/it-it/products/ai-services/openai-service) 
+        API Key and endpoints or to have [Ollama](https://ollama.com/) installed in your machine. 
+        You could also use the [Groq Cloud](https://console.groq.com/home) API if you want to test other open weights models
     * **Documents**: Documents coming from a specific domain to ingest; available formats are `.pdf`, `.docx`, `.txt`, `.html`.
     * **Configuration**: in order for this Demo to work, you should either have all the settings for Neo4j, LLMs.. 
-        inside your environment or a configuration file at the following path: `knowledge-graphs/configuration.json`. 
+        inside your environment or a configuration file at the following path: `knowledge-graphs/config.env`. 
         See the repository's README for further details on the settings. 
     """
 )

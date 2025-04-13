@@ -291,7 +291,7 @@ class GraphAgentResponder:
         filter:Optional[Dict[str, Any]]=None
         ) -> str:
         """ 
-        Asnwers the user query performing text generation after having retrieved
+        Answers the user query performing text generation after having retrieved
         context both via Vector Search and Cypher Queries. 
         Results from both this methods are synthetized in a comprehensive answer.
 
