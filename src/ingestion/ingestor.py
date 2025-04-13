@@ -5,12 +5,12 @@ from typing import List, Tuple, Optional, Dict, Any
 
 from langchain.schema import Document
 from langchain_community.document_loaders import TextLoader, Docx2txtLoader, PDFPlumberLoader, BSHTMLLoader
-from logging import getLogger
+from src.utils.logger import get_logger
 
 from src.config import Source
 from src.schema import ProcessedDocument
 
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 MIME_TYPE_MAPPING = {
     'application/pdf': PDFPlumberLoader,

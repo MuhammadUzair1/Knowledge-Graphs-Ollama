@@ -17,21 +17,48 @@ st.set_page_config(
 
 st.markdown(
     """
-    ## Chat With Knowledge Graph
+    ## 🦜 Chat With Knowledge Graph 🕸️
 
-    After building a Knowledge Graph from your documents, you are now able to 
-    ask it questions.  
-    The agent in charge to answer ypu is able to both generate answers
-    grounded by similarity search on document chunks, but also to query the Graph 
-    in its own native language, Cypher. 
+    After building a Knowledge Graph from your documents, you are now able to ask it questions.  
+    The agent in charge to answer you is able to generate answers
+    * grounded by similarity search on document chunks 
+    * querying the Graph in its own native language, Cypher
+    * querying for [communities](https://en.wikipedia.org/wiki/Louvain_method) inside the Graph 
+    * looking for communities subgraphs
+    * combining the previous approaches 
     """
 )
-
 
 CONF_PATH = f"{os.getcwd()}/configuration.json"
 
 env = False
 conf = None
+
+st.session_state["answer_method"] = None
+st.session_state["community_to_use"] = None
+st.session_state["adjacent_chunks"] = False
+
+answering_options = ["Similarity Search", "Cypher", "Communities", "Subgraph", "Combine"]
+community_options = ["leiden", "louvain"]
+
+with st.sidebar:
+    st.session_state["answer_method"] = st.radio(
+        label="Select Answering Method",
+        options=answering_options,
+        help="Choose the method the Graph Agent will use to answer"
+    )
+    
+    st.session_state["adjacent_chunks"] = st.checkbox(
+        label="Use neighbouring Chunks",
+        help="When performing similarity-based generation, the Agent will also look for Chunk nearing each other in the same Document."
+    )
+
+    st.session_state["community_to_use"] = st.selectbox(
+        label="Select the reference Community",
+        options=community_options, 
+        help="Looking for Communities and Subgraphs requires to select one"
+    )
+
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "Hi, you can ask me questions about the Documents in the Knowledge Graph"}]
 
@@ -52,30 +79,57 @@ if conf:
     responder = GraphAgentResponder(
         qa_llm_conf=conf.qa_model,
         cypher_llm_conf=conf.qa_model,
-        graph=knowledge_graph,
-        rephrase_llm_conf=conf.qa_model
+        graph=knowledge_graph
+        # rephrase_llm_conf=conf.qa_model
     )
 
     if knowledge_graph._driver.verify_authentication():
         
-        a, b, c, d = st.columns(4, vertical_alignment="center")
+        with st.expander(label="**Graph Metrics**", icon="📊", expanded=True):
+            #TODO cache data here 
+            a, b, c, d = st.columns(4, vertical_alignment="center")
+            e, f, g, h = st.columns(4, vertical_alignment="center")
 
-        a.metric(
-            label="# Docs in Graph",
-            value=knowledge_graph.number_of_docs,
-        )
-        b.metric(
-            label="# Labels in Graph",
-            value=knowledge_graph.number_of_labels,
-        )
-        c.metric(
-            label="# Nodes",
-            value=knowledge_graph.number_of_nodes,
-        )
-        d.metric(
-            label="# Relationships",
-            value=knowledge_graph.number_of_relationships,
-        )
+            a.metric(
+                label="Docs in Graph",
+                help="Number of documents ingested into the Knowledge Graph",
+                value=knowledge_graph.number_of_docs,
+            )
+            b.metric(
+                label="Labels in Graph",
+                help="Number of entity Labels in the Knowledge Graph", 
+                value=knowledge_graph.number_of_labels,
+            )
+            c.metric(
+                label="Nodes",
+                help="Number of Entities in the Graph", 
+                value=knowledge_graph.number_of_nodes,
+            )
+            d.metric(
+                label="Relationships",
+                help="Number of Relationships between entities", 
+                value=knowledge_graph.number_of_relationships,
+            )
+            e.metric(
+                label="Leiden Communities",
+                help="Number of Leiden Communities in the Graph",
+                value=knowledge_graph.number_of_leiden_communities
+            )
+            f.metric(
+                label="Leiden Modularity",
+                help="The higher it is, the more connected communities in the Graph",
+                value=round(knowledge_graph.leiden_modularity, 4)
+            )
+            g.metric(
+                label="Louvain Communities",
+                help="Number of Louvain Communities in the Graph",
+                value=knowledge_graph.number_of_louvain_communities
+            )
+            h.metric(
+                label="Louvain Modularity",
+                help="The higher it is, the more connected communities in the Graph",
+                value=round(knowledge_graph.louvain_modularity, 4)
+            )
 
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
@@ -90,8 +144,35 @@ if conf:
                 st.markdown(prompt)
 
             with st.chat_message("assistant"):
-                # Add assistant response to chat history
-                response =responder.answer(prompt)
+                
+                if st.session_state["answer_method"] == "Similarity Search":
+                    response = responder.answer_with_context(
+                        query=prompt, 
+                        use_adjacent_chunks=st.session_state["adjacent_chunks"]
+                    )
+                elif st.session_state["answer_method"] == "Cypher":
+                    response = responder.answer_with_cypher(
+                        query=prompt, 
+                        intermediate_steps=False
+                    )
+                elif st.session_state["answer_method"] == "Communities":
+                    response = responder.answer_with_community_reports(
+                        query=prompt, 
+                        use_adjacent_chunks=st.session_state["adjacent_chunks"],
+                        community_type=st.session_state["community_to_use"]
+                    )
+                elif st.session_state["answer_method"] == "Subgraph":
+                    response = responder.answer_with_community_subgraph(
+                        query=prompt, 
+                        community_type=st.session_state["community_to_use"]
+                    )
+                else:
+                    response = responder.answer(
+                        query=prompt, 
+                        use_adjacent_chunks=st.session_state["adjacent_chunks"]
+                    )
+                
+                #TODO use chat history
                 st.write(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
