@@ -1,5 +1,5 @@
 # Knowledge Graphs 
-> ℹ️ last updated April 13th, 2025.  
+> ℹ️ last updated April 21, 2025.  
 
 ![dalle](assets/dalle_kg.png)
 
@@ -9,7 +9,7 @@ What is currently provided is:
 * source code
 * example notebooks written while building the repo
 * a Streamlit app to showcase work done until this point
-* a Docker file to built the image for this project without having to manually install Neo4j and Ollama (WIP) 
+* Docker files to built the image(s) for this project without having to manually install Neo4j and Ollama
 
 ## What is a Knowledge Graph?
 A Knowledge Graph is a structured representation of information that connects concepts, entities, and their relationships in a way that mimics human understanding. It is often used to organize and integrate data from various sources, enabling machines to reason, infer, and retrieve relevant information more effectively.
@@ -76,6 +76,53 @@ Neo4j offers both a managed, [cloud-based experience](https://neo4j.com/product/
 
 This is what a Knowledge Graph looks like in Neo4j:
 ![graph_press_release](assets/graph_from_press_releases.png)
+
+## 👑 Streamlit Web App
+To showcase how the code works, a [Streamlit App](https://streamlit.io/cloud) has been built with the following pages:
+* [Home](pgs/home): mostly here to help the user navigate the web app; 
+* [Upload](pgs/upload.py): Upload documents into Neo4j following a pipeline of commands;
+* [Chat](pgs/chat.py): Chat with the Knowledge Graph with various retrieval strategies (see the previous section).
+
+> 💡 before running the app, ensure you have 
+> * an active instance of Neo4j (either in the cloud with Aura or locally deployed)
+> * API keys to access LLMs and Embeddings models (OpenAI, Ollama, Groq..)
+> * a `config.env` file with your environment variables at the root of this folder
+
+To run the app, all you need to do is to go on your terminal and run
+
+````
+pip install -r requirements.txt
+
+streamlit run app.py
+````
+
+A new webpage pointing to your localhost will appear and you will be able to test the app for yourself.  
+
+![example_chat](assets/screen_chat.png)
+
+> ⚠ As all Streamlit apps, this should NOT be used for production use cases but it's only meant as a demo.
+
+## 🐳 Build with Docker  
+
+
+Docker is commonly used to package and containerize applications to make them ready for cloud deployment via container registries. It also helps avoiding those "works on my machine" kinda issues.    
+In this repo you will find files for building the images you need for the demo, without having to install anything yourself (except for [Docker](https://www.docker.com/) of course).  
+If you want to build the app "as-is" you can just go to your terminal and launch 
+
+````
+docker compose up --build
+````
+to build the following images (each of them can also be run on its own):
+
+* `Dockerfile`: builds the app image and lets you run it in a isolated environment (no need to have python installed in your machine)
+* `ollama.Dockerfile`: use it to containerize a Ollama version; **currently work in progress**, ollama is set to only use CPU inference
+* `Neo4j`: the base image for Neo4j + additional libraries such as `APOC` and `graph-data-science`
+
+> ⚠ Neo4j Community Edition does not support vector search natively as of now.  
+> If you want to experiment with Neo4j Enterprise locally, Neo4j still allows you to run it free for dev purposes (you just have to accept the license, as you can see from the `docker-compose.yml` file).
+
+If the command does not throw errors, you should be able to see something like this
+![docker_screen](assets/docker_compose.png)
 
 ## 🕸️ How to build a Graph 
 Currently, when uploading a one or more files inside the Streamlit App (see below), each file is passed through a pipeline that will: 
@@ -147,28 +194,6 @@ Here is a comparison table with available options.
 | `answer_with_community_reports` | Queries two vector indexes to get the user's answer out of an ensemble of contexts: one made of a list of `CommunityReport` and one made of a list of `Chunk` from the same communities of the reports. If `use_adjacent_chunks=True` will query the graph for additional context compared to the Chunks retrieved by the similarity search | Medium | Low / Medium | `use_adjacent_chunks`, `community_type` | Enhanced Similarity Search, performances vary on the attention window of the LLM |
 | `answer_with_community_subgraph` | Answers after querying for communities: (i) read the most relevant community reports (ii) fetch Chunks belonging to the most relevant community (iii) follow the MENTIONS relationship of each Chunk (iv) fetch the community subgraph (v) passes the subgraph + Chunks + the report to a reconciler agent to decide how to answer | High | Medium | `community_type` | Performances vary on the attention window of the LLM; might get chaotic | 
 | `answer` | Answers the user query performing text generation after having retrieved context both via Vector Search and Cypher Queries. Results from both this methods are synthetized in a comprehensive answer | High | High | `use_adjacent_chunks`, `filter` | Generally the best (most on point) answering strategy. Might Get complicated for smaller models to handle the complexity|
-
-## 👑 Streamlit Web App
-To showcase how the code works, a [Streamlit App](https://streamlit.io/cloud) has been built with the following pages:
-* [Home](pgs/home): mostly here to help the user navigate the web app; 
-* [Upload](pgs/upload.py): Upload documents into Neo4j following a pipeline of commands;
-* [Chat](pgs/chat.py): Chat with the Knowledge Graph with various retrieval strategies (see the previous section).
- 
-To run the app ensure you already have a `config.env` file for your environment variables and then 
-````
-pip install -r requirements.txt
-
-streamlit run app.py
-````
-
-A new webpage pointing to your localhost will appear and you will be able to test the app for yourself.  
-
-![example_chat](assets/screen_chat.png)
-
-> ⚠ As all Streamlit apps, this should NOT be used for production use cases but it's only meant as a demo.
-
-## 🐳 Build with Docker
-I am planning to release a dockerized version of this project, with Ollama and Neo4j already in place. Currently not released. 
 
 ## ❓ Support
 This app currently offers various options for LLM and Embeddings deployment; since this is built mostly for fun, I am currently using Ollama and Groq models.   
