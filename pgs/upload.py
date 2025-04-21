@@ -144,6 +144,9 @@ if len(uploaded_files) > 0:
             )
 
         if st.session_state["cleanup_clicked"]:
-            shutil.rmtree(SOURCE_FOLDER)
+            for filename in os.listdir(SOURCE_FOLDER):
+                file_path = os.path.join(SOURCE_FOLDER, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
             st.info("Cleanup Completed!")
             
