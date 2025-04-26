@@ -137,43 +137,56 @@ if conf:
         
         # Accept user input
         if prompt := st.chat_input("What are the available nodes in the Graph?"):
-            # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
+            
             # Display user message in chat message container
             with st.chat_message("user"):
                 st.markdown(prompt)
-
+                
+            chat_history = ""
+            for m in st.session_state.messages:
+                if m["role"] == "user":
+                    chat_history += f"User: {m['content']}\n"
+                elif m["role"] == "assistant":
+                    chat_history += f"Assistant: {m['content']}\n"
+                
+            
+                
+            if st.session_state["answer_method"] == "Similarity Search":
+                response = responder.answer_with_context(
+                    query=prompt, 
+                    use_adjacent_chunks=st.session_state["adjacent_chunks"],
+                    history=chat_history
+                )
+            elif st.session_state["answer_method"] == "Cypher":
+                response = responder.answer_with_cypher(
+                    query=prompt, 
+                    intermediate_steps=False,
+                    history=chat_history
+                )
+            elif st.session_state["answer_method"] == "Communities":
+                response = responder.answer_with_community_reports(
+                    query=prompt, 
+                    use_adjacent_chunks=st.session_state["adjacent_chunks"],
+                    community_type=st.session_state["community_to_use"]
+                )
+            elif st.session_state["answer_method"] == "Subgraph":
+                response = responder.answer_with_community_subgraph(
+                    query=prompt, 
+                    community_type=st.session_state["community_to_use"]
+                )
+            else:
+                response = responder.answer(
+                    query=prompt, 
+                    use_adjacent_chunks=st.session_state["adjacent_chunks"]
+                )
+                
+            #TODO use chat history
             with st.chat_message("assistant"):
-                
-                if st.session_state["answer_method"] == "Similarity Search":
-                    response = responder.answer_with_context(
-                        query=prompt, 
-                        use_adjacent_chunks=st.session_state["adjacent_chunks"]
-                    )
-                elif st.session_state["answer_method"] == "Cypher":
-                    response = responder.answer_with_cypher(
-                        query=prompt, 
-                        intermediate_steps=False
-                    )
-                elif st.session_state["answer_method"] == "Communities":
-                    response = responder.answer_with_community_reports(
-                        query=prompt, 
-                        use_adjacent_chunks=st.session_state["adjacent_chunks"],
-                        community_type=st.session_state["community_to_use"]
-                    )
-                elif st.session_state["answer_method"] == "Subgraph":
-                    response = responder.answer_with_community_subgraph(
-                        query=prompt, 
-                        community_type=st.session_state["community_to_use"]
-                    )
-                else:
-                    response = responder.answer(
-                        query=prompt, 
-                        use_adjacent_chunks=st.session_state["adjacent_chunks"]
-                    )
-                
-                #TODO use chat history
                 st.write(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
+            
+            # Add user message to chat history
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            # Add response to chat history
+            st.session_state.messages.append({"role": "assistant", "content": response})
 
            
