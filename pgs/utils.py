@@ -3,7 +3,10 @@ from dotenv import load_dotenv
 
 import streamlit as st
 
+from src.agents.graph_qa import GraphAgentResponder
 from src.config import Configuration, Source, ChunkerConf, LLMConf, EmbedderConf, KnowledgeGraphConfig
+from src.graph.knowledge_graph import KnowledgeGraph
+from src.ingestion.embedder import ChunkEmbedder
 
 SOURCE_FOLDER = f"{os.getcwd()}/source_docs"
 
@@ -54,3 +57,29 @@ def get_configuration_from_env() -> Configuration:
         return conf
     else: 
         st.error("Neither a Configuration file nor an Environment file has been passed!")
+
+
+@st.cache_resource
+def get_knowledge_graph(_conf: Configuration, _embedder: ChunkEmbedder):
+    kg = KnowledgeGraph(
+        conf=_conf.database, 
+        embeddings_model=_embedder.embeddings,
+    )
+    return kg
+
+
+@st.cache_resource
+def get_embedder(_embedder_conf: EmbedderConf):
+    embedder = ChunkEmbedder(conf=_embedder_conf)
+    return embedder
+
+
+@st.cache_resource
+def get_responder(_conf: Configuration, _kg: KnowledgeGraph):
+    responder = GraphAgentResponder(
+        qa_llm_conf=_conf.qa_model,
+        cypher_llm_conf=_conf.qa_model,
+        graph=_kg
+        # rephrase_llm_conf=conf.qa_model
+    )
+    return responder

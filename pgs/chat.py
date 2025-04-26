@@ -3,11 +3,8 @@ import os
 import streamlit as st
 
 from src.config import Configuration
-from src.agents.graph_qa import GraphAgentResponder
-from src.graph.knowledge_graph import KnowledgeGraph
-from src.ingestion.embedder import ChunkEmbedder
 
-from pgs.utils import get_configuration_from_env
+from pgs.utils import get_configuration_from_env, get_embedder, get_knowledge_graph, get_responder
 
 st.set_page_config(
     page_title="Chat",
@@ -41,47 +38,17 @@ st.session_state["adjacent_chunks"] = False
 answering_options = ["Similarity Search", "Cypher", "Communities", "Subgraph", "Combine"]
 community_options = ["leiden", "louvain"]
 
-with st.sidebar:
-    st.session_state["answer_method"] = st.radio(
-        label="Select Answering Method",
-        options=answering_options,
-        help="Choose the method the Graph Agent will use to answer"
-    )
-    
-    st.session_state["adjacent_chunks"] = st.checkbox(
-        label="Use neighbouring Chunks",
-        help="When performing similarity-based generation, the Agent will also look for Chunk nearing each other in the same Document."
-    )
-
-    st.session_state["community_to_use"] = st.selectbox(
-        label="Select the reference Community",
-        options=community_options, 
-        help="Looking for Communities and Subgraphs requires to select one"
-    )
-
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Hi, you can ask me questions about the Documents in the Knowledge Graph"}]
-
 try:
     conf = Configuration.from_file(CONF_PATH)
 except Exception as e:
     conf = get_configuration_from_env()
-
-
+    
 if conf:
-    embedder = ChunkEmbedder(conf=conf.embedder_conf)
+    embedder = get_embedder(conf.embedder_conf)
 
-    knowledge_graph = KnowledgeGraph(
-        conf=conf.database, 
-        embeddings_model=embedder.embeddings,
-    )
+    knowledge_graph = get_knowledge_graph(conf, embedder)
 
-    responder = GraphAgentResponder(
-        qa_llm_conf=conf.qa_model,
-        cypher_llm_conf=conf.qa_model,
-        graph=knowledge_graph
-        # rephrase_llm_conf=conf.qa_model
-    )
+    responder = get_responder(conf, knowledge_graph)
 
     if knowledge_graph._driver.verify_authentication():
         
@@ -131,62 +98,81 @@ if conf:
                 value=round(knowledge_graph.louvain_modularity, 4)
             )
 
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+
+with st.sidebar:
+    st.session_state["answer_method"] = st.radio(
+        label="Select Answering Method",
+        options=answering_options,
+        help="Choose the method the Graph Agent will use to answer"
+    )
+    
+    st.session_state["adjacent_chunks"] = st.checkbox(
+        label="Use neighbouring Chunks",
+        help="When performing similarity-based generation, the Agent will also look for Chunk nearing each other in the same Document."
+    )
+
+    st.session_state["community_to_use"] = st.selectbox(
+        label="Select the reference Community",
+        options=community_options, 
+        help="Looking for Communities and Subgraphs requires to select one"
+    )
+
+if "messages" not in st.session_state:
+    st.session_state.messages = [{"role": "assistant", "content": "Hi, you can ask me questions about the Documents in the Knowledge Graph"}]
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+    
+# Accept user input
+if prompt := st.chat_input("What are the available nodes in the Graph?"):
+    
+    # Display user message in chat message container
+    with st.chat_message("user"):
+        st.markdown(prompt)
         
-        # Accept user input
-        if prompt := st.chat_input("What are the available nodes in the Graph?"):
-            
-            # Display user message in chat message container
-            with st.chat_message("user"):
-                st.markdown(prompt)
-                
-            chat_history = ""
-            for m in st.session_state.messages:
-                if m["role"] == "user":
-                    chat_history += f"User: {m['content']}\n"
-                elif m["role"] == "assistant":
-                    chat_history += f"Assistant: {m['content']}\n"
-                
-            
-                
-            if st.session_state["answer_method"] == "Similarity Search":
-                response = responder.answer_with_context(
-                    query=prompt, 
-                    use_adjacent_chunks=st.session_state["adjacent_chunks"],
-                    history=chat_history
-                )
-            elif st.session_state["answer_method"] == "Cypher":
-                response = responder.answer_with_cypher(
-                    query=prompt, 
-                    intermediate_steps=False,
-                    history=chat_history
-                )
-            elif st.session_state["answer_method"] == "Communities":
-                response = responder.answer_with_community_reports(
-                    query=prompt, 
-                    use_adjacent_chunks=st.session_state["adjacent_chunks"],
-                    community_type=st.session_state["community_to_use"]
-                )
-            elif st.session_state["answer_method"] == "Subgraph":
-                response = responder.answer_with_community_subgraph(
-                    query=prompt, 
-                    community_type=st.session_state["community_to_use"]
-                )
-            else:
-                response = responder.answer(
-                    query=prompt, 
-                    use_adjacent_chunks=st.session_state["adjacent_chunks"]
-                )
-                
-            #TODO use chat history
-            with st.chat_message("assistant"):
-                st.write(response)
-            
-            # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            # Add response to chat history
-            st.session_state.messages.append({"role": "assistant", "content": response})
+    chat_history = ""
+    for m in st.session_state.messages:
+        if m["role"] == "user":
+            chat_history += f"User: {m['content']}\n"
+        elif m["role"] == "assistant":
+            chat_history += f"Assistant: {m['content']}\n"
+        
+    if st.session_state["answer_method"] == "Similarity Search":
+        response = responder.answer_with_context(
+            query=prompt, 
+            use_adjacent_chunks=st.session_state["adjacent_chunks"],
+            history=chat_history
+        )
+    elif st.session_state["answer_method"] == "Cypher":
+        response = responder.answer_with_cypher(
+            query=prompt, 
+            intermediate_steps=False,
+            history=chat_history
+        )
+    elif st.session_state["answer_method"] == "Communities":
+        response = responder.answer_with_community_reports(
+            query=prompt, 
+            use_adjacent_chunks=st.session_state["adjacent_chunks"],
+            community_type=st.session_state["community_to_use"]
+        )
+    elif st.session_state["answer_method"] == "Subgraph":
+        response = responder.answer_with_community_subgraph(
+            query=prompt, 
+            community_type=st.session_state["community_to_use"]
+        )
+    else:
+        response = responder.answer(
+            query=prompt, 
+            use_adjacent_chunks=st.session_state["adjacent_chunks"]
+        )
+        
+    with st.chat_message("assistant"):
+        st.write(response)
+    
+    # Add user message to chat history
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    # Add response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": response})
 
            
