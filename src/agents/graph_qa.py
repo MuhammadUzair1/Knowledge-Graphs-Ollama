@@ -55,14 +55,19 @@ class GraphAgentResponder:
             }
             
         
-    def answer_with_cypher(self, query: str, intermediate_steps: bool=False) -> str | Tuple[str, List]:
+    def answer_with_cypher(
+        self, 
+        query: str, 
+        intermediate_steps: bool=False, 
+        history: str=None
+        ) -> str | Tuple[str, List]:
         """ 
         Uses only the Cypher chain to answer the user's question.
         """
         
         if self.rephrase_llm:
             try: 
-                rephrased_question = self.rephrase_llm.invoke(input=self.rephrase_prompt.format(question=query)).content
+                rephrased_question = self.rephrase_llm.invoke(input=self.rephrase_prompt.format(question=query, history=history)).content
                 logger.info(f"Rephrased Question: {rephrased_question}")
             except Exception as e:
                 logger.warning(f"Failed to rephrase user question with exception: {e}")
@@ -82,7 +87,12 @@ class GraphAgentResponder:
             logger.warning(f"Problem Answering with CYPHER chain: {e}")
             
             
-    def answer_with_context(self, query: str, use_adjacent_chunks: bool=False)-> str:
+    def answer_with_context(
+        self, 
+        query: str, 
+        use_adjacent_chunks: bool=False, 
+        history: str=None
+        )-> str:
         """ 
         Uses only vanilla RAG to answer the user's question.  
         If `use_adjacent_chunks=True` will query the graph for additional context 
@@ -118,15 +128,22 @@ class GraphAgentResponder:
             
         answer: BaseMessage = self.qa_llm.invoke(
             input=self.qa_prompt.format(
+                history=history,
                 question=query, 
-                context=context, 
+                context=context
             )
         )
 
         return answer.content
     
     
-    def answer_with_community_reports(self, query: str, use_adjacent_chunks: bool=False, community_type: str="leiden") -> str: 
+    def answer_with_community_reports(
+        self, 
+        query: str, 
+        use_adjacent_chunks: bool=False, 
+        community_type: str="leiden",
+        history: str=None
+        ) -> str: 
         """ 
         Queries two vector indexes to get the user's answer out of an ensemble of contexts:
             1. one made of a list of `CommunityReport`
@@ -195,13 +212,19 @@ class GraphAgentResponder:
             input=self.qa_prompt.format(
                 question=query, 
                 context=context, 
+                history=history
             )
         )
         
         return answer.content
             
         
-    def answer_with_community_subgraph(self, query: str, community_type: str = "leiden") -> str: 
+    def answer_with_community_subgraph(
+        self, 
+        query: str, 
+        community_type: str = "leiden",
+        history: str = None
+        ) -> str: 
         """ 
         Answers after querying for communities:  
         
@@ -278,6 +301,7 @@ class GraphAgentResponder:
             input=self.qa_prompt_with_subgraph.format(
                 question=query, 
                 context=context, 
+                history=history
             )
         )
         
@@ -288,7 +312,8 @@ class GraphAgentResponder:
         self, 
         query: str, 
         use_adjacent_chunks: bool=False, 
-        filter:Optional[Dict[str, Any]]=None
+        filter:Optional[Dict[str, Any]]=None,
+        history: str = None
         ) -> str:
         """ 
         Answers the user query performing text generation after having retrieved
@@ -334,6 +359,7 @@ class GraphAgentResponder:
         
         final_answer: BaseMessage = self.qa_llm.invoke(
             input=self.summarize_prompt.format(
+                history=history,
                 question=query, 
                 retrieved_context=context, 
                 query_result=cypher_steps
