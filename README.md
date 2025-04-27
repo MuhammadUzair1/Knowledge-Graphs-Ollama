@@ -208,3 +208,4 @@ This app currently offers various options for LLM and Embeddings deployment; sin
 * [OpenAI](https://platform.openai.com/docs/overview) / [AzureOpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
 * [Hugging Face](https://huggingface.co/) 
 * [Groq Cloud](https://console.groq.com/home)
+* [Google Gemini](https://aistudio.google.com/)
