@@ -16,6 +16,27 @@ def document_metadata(session: Session, filename: str, version: Optional[int]) -
     pass
 
 
+def get_chunk_element_id(session: Session, chunk: Chunk) -> str | None:
+    """ Returns the unique elementId in the graph for a given `Chunk`"""
+    
+    query = """ 
+        MATCH (c:Chunk {filename: $filename, chunk_id: $chunk_id, text: $text})
+        RETURN elementId(c) AS element_id
+    """
+    try:
+        result = session.run(
+            query, 
+            filename=chunk.filename, 
+            chunk_id=chunk.chunk_id,
+            text=chunk.text
+        )
+        record = result.single()
+        return record["element_id"]
+    except Exception as e:
+        logger.warning(f"Unable to retrieve elementId for Chunk: {chunk.chunk_id}")
+        return None
+        
+
 def get_adjacent_chunks(
     session: Session, 
     chunk: Chunk, 
