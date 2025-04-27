@@ -1,4 +1,5 @@
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAI
 from langchain_groq.chat_models import ChatGroq
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI, AzureChatOpenAI
@@ -44,13 +45,18 @@ def fetch_llm(conf: LLMConf) -> BaseChatModel | None:
             temperature=conf.temperature,
             max_retries=3
         )
+    elif conf.type == "google":
+        llm = ChatGoogleGenerativeAI(
+            model=conf.model,
+            api_key=conf.api_key,
+            temperature=conf.temperature,
+        )
     elif conf.type == "trf":
         llm = ChatHuggingFace(
             model=conf.model,
             endpoint=conf.endpoint,
             temperature=conf.temperature
         )
-
     else:
         logger.warning(f"LLM type '{conf.type}' not supported.")
         llm = None
