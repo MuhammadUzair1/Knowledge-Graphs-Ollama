@@ -16,6 +16,7 @@ class ModelType(str, Enum):
     Type of embedders available in the toolkit
     """
     AZURE_OPENAI = "azure-openai"
+    GOOGLE = "google"
     GROQ = "groq"
     OPENAI = "openai"
     OLLAMA = "ollama"
