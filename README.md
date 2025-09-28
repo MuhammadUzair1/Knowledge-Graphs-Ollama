@@ -14,7 +14,7 @@ What is currently provided is:
 ## What is a Knowledge Graph?
 A Knowledge Graph is a structured representation of information that connects concepts, entities, and their relationships in a way that mimics human understanding. It is often used to organize and integrate data from various sources, enabling machines to reason, infer, and retrieve relevant information more effectively.
 
-> 💡 To have a clearer insight on the relevance of Knowledge Graphs, I've written a [Medium Post](https://medium.com/p/fc0b9dc1602c). Feel free to check it out. 
+> 💡 To have a clearer insight on the relevance of Knowledge Graphs, here is a [Medium Post](https://medium.com/p/fc0b9dc1602c).
 
 The key features of Knowledge Graphs can be divided in:
 
